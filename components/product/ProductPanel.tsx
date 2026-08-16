@@ -1,0 +1,205 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Heart, ChevronDown, MessageCircle, ShoppingBag, Check } from "lucide-react";
+import type { Product } from "@/lib/types";
+import { MADE_TO_ORDER_NOTE, WHATSAPP_NUMBER } from "@/lib/business-info";
+import { OrderWhatsAppModal } from "./OrderWhatsAppModal";
+import { useCart } from "@/lib/cart-context";
+import { getProductImage } from "@/lib/product-image";
+import { getSalePrice, isOnSale } from "@/lib/pricing";
+
+export function ProductPanel({ product }: { product: Product }) {
+  const [color, setColor] = useState(product.colors[0]?.name);
+  const [size, setSize] = useState<string | null>(null);
+  const [wishlisted, setWishlisted] = useState(false);
+  const [sizeWarning, setSizeWarning] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+  const { addItem } = useCart();
+
+  const salePrice = getSalePrice(product);
+  const onSale = isOnSale(product);
+  const effectivePrice = salePrice ?? product.price;
+
+  function requireSize(): boolean {
+    if (!size) {
+      setSizeWarning(true);
+      return false;
+    }
+    setSizeWarning(false);
+    return true;
+  }
+
+  function handleOrderClick() {
+    if (requireSize()) setShowOrderModal(true);
+  }
+
+  function handleAddToCart() {
+    if (!requireSize() || !size) return;
+    addItem({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: effectivePrice,
+      image: getProductImage(product),
+      color: color ?? "",
+      size,
+    });
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 2000);
+  }
+
+  return (
+    <div>
+      <p className="eyebrow text-primary mb-2">{product.fabric}</p>
+      <h1 className="font-display text-3xl text-ink mb-3">{product.name}</h1>
+      {onSale ? (
+        <div className="mb-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-2xl text-primary font-bold">${salePrice?.toLocaleString()}</span>
+            <span className="text-ink-soft/60 line-through text-lg">${product.price.toLocaleString()}</span>
+            <span className="bg-gold text-primary-deep text-sm font-bold px-3 py-1 rounded-full shadow-sm border border-primary-deep/10">
+              SAVE {product.salePercent}%
+            </span>
+          </div>
+          <p className="text-xs text-primary font-medium mt-1.5">
+            Limited-time clearance price — while stock lasts
+          </p>
+        </div>
+      ) : (
+        <p className="text-xl text-primary font-medium mb-3">${product.price.toLocaleString()}</p>
+      )}
+      <p className="text-xs text-ink-soft bg-primary/[0.05] border border-primary/10 rounded-md px-3 py-2 mb-6 leading-relaxed max-w-md">
+        Made to order in your size · 50% deposit, balance due on pickup or shipment · Allow
+        10-14 working days
+      </p>
+      <p className="text-ink-soft text-sm leading-relaxed mb-7 max-w-md">{product.description}</p>
+
+      <div className="mb-6">
+        <p className="text-xs uppercase tracking-[0.08em] text-ink-soft mb-3">
+          Color: <span className="text-ink font-medium">{color}</span>
+        </p>
+        <div className="flex gap-2.5">
+          {product.colors.map((c) => (
+            <button
+              key={c.name}
+              aria-label={c.name}
+              onClick={() => setColor(c.name)}
+              className={`h-8 w-8 rounded-full border-2 transition-transform ${
+                color === c.name ? "border-primary scale-110" : "border-transparent"
+              }`}
+              style={{ background: c.hex, boxShadow: "0 0 0 1px rgba(0,0,0,0.1) inset" }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs uppercase tracking-[0.08em] text-ink-soft">Size</p>
+          <a href="/size-guide" className="text-xs text-primary underline underline-offset-2">
+            Size Guide
+          </a>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {product.sizes.map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                setSize(s);
+                setSizeWarning(false);
+              }}
+              className={`h-10 min-w-10 px-3 text-sm border transition-colors ${
+                size === s
+                  ? "border-primary bg-primary text-cream"
+                  : "border-line text-ink-soft hover:border-primary"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        {sizeWarning && <p className="text-xs text-red-600 mt-2">Please select a size to continue.</p>}
+      </div>
+
+      <div className="space-y-3 mb-8">
+        <button
+          onClick={handleOrderClick}
+          className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 text-sm tracking-[0.08em] uppercase hover:brightness-95 transition-all"
+        >
+          <MessageCircle size={16} strokeWidth={2} />
+          Order via WhatsApp
+        </button>
+        <p className="text-center text-xs text-ink-soft">or message us directly at {WHATSAPP_NUMBER}</p>
+
+        <button
+          onClick={handleAddToCart}
+          className="w-full flex items-center justify-center gap-2 border border-ink/30 text-ink py-3.5 text-sm tracking-[0.08em] uppercase hover:border-ink transition-colors"
+        >
+          {justAdded ? <Check size={16} strokeWidth={2} /> : <ShoppingBag size={16} strokeWidth={1.75} />}
+          {justAdded ? "Added to Cart" : "Add to Cart"}
+        </button>
+        {justAdded && (
+          <p className="text-center text-xs text-ink-soft">
+            <Link href="/cart" className="text-primary underline underline-offset-2">
+              View cart
+            </Link>{" "}
+            to order multiple pieces in one WhatsApp message.
+          </p>
+        )}
+
+        <button
+          onClick={() => setWishlisted((v) => !v)}
+          className="w-full flex items-center justify-center gap-2 py-2 text-sm text-ink-soft hover:text-primary transition-colors"
+        >
+          <Heart size={15} strokeWidth={1.6} className={wishlisted ? "fill-primary text-primary" : ""} />
+          {wishlisted ? "Added to Wishlist" : "Add to Wishlist"}
+        </button>
+      </div>
+
+      <div className="divide-y divide-line border-t border-b border-line">
+        <Accordion title="Details">
+          Made to order from authentic {product.fabric.toLowerCase()}. Every piece is cut and
+          finished by hand in our Accra atelier.
+        </Accordion>
+        <Accordion title="Fabric & Care">
+          Dry clean recommended. Store folded or on a padded hanger away from direct sunlight to
+          preserve the print's colour.
+        </Accordion>
+        <Accordion title="Payment & Delivery">{MADE_TO_ORDER_NOTE}</Accordion>
+      </div>
+
+      {showOrderModal && (
+        <OrderWhatsAppModal
+          productName={product.name}
+          price={effectivePrice}
+          color={color ?? ""}
+          size={size}
+          onClose={() => setShowOrderModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between py-4 text-sm font-medium text-ink"
+      >
+        {title}
+        <ChevronDown
+          size={16}
+          strokeWidth={1.5}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && <p className="pb-4 text-sm text-ink-soft leading-relaxed">{children}</p>}
+    </div>
+  );
+}
