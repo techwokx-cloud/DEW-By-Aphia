@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findOrCreateLead, appendMessage, setDraftReply } from "@/lib/store/leads";
+import { findOrCreateLead, appendMessage, setDraftReply, getLead } from "@/lib/store/leads";
 import { generateDMReply } from "@/lib/ai/dm-agent";
 
 // Meta's webhook verification handshake — required once, when you register
@@ -30,10 +30,11 @@ export async function POST(request: NextRequest) {
       const text = event.message?.text;
       if (!senderId || !text) continue;
 
-      const lead = findOrCreateLead(senderId);
-      appendMessage(lead.id, "lead", text);
-      const draft = await generateDMReply(lead.messages);
-      setDraftReply(lead.id, draft.reply);
+      const lead = await findOrCreateLead(senderId);
+      await appendMessage(lead.id, "lead", text);
+      const updatedLead = (await getLead(lead.id))!;
+      const draft = await generateDMReply(updatedLead.messages);
+      await setDraftReply(lead.id, draft.reply);
     }
   }
 

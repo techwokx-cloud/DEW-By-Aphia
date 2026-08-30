@@ -3,13 +3,14 @@ import { listReels, addReel } from "@/lib/store/reel-queue";
 import { getAllProducts, getProductBySlug } from "@/lib/products-data";
 import { generateReelScript } from "@/lib/ai/reel-script-agent";
 import { pickNextMedia, markUsed } from "@/lib/store/media-library";
-import { generateFalImage } from "@/lib/fal-client";
+import { generateFalImage, buildPosterPrompt } from "@/lib/fal-client";
 import { generateGraphicCard } from "@/lib/graphic-card";
 import { submitReelRender, type ReelScene } from "@/lib/json2video-client";
 import { notifyOwner } from "@/lib/whatsapp-owner-notify";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 export async function GET() {
-  return NextResponse.json({ items: listReels() });
+  return NextResponse.json({ items: await listReels() });
 }
 
 export async function POST(request: NextRequest) {
@@ -24,28 +25,38 @@ export async function POST(request: NextRequest) {
   // media, then an AI-generated image via fal.ai, then the branded SVG
   // card as a last resort.
   let imageUrl: string;
-  const media = pickNextMedia();
+  const media = await pickNextMedia();
   if (media) {
-    imageUrl = new URL(media.url, request.nextUrl.origin).toString();
-    markUsed(media.id);
+    imageUrl = new URL(media.url, getPublicSiteUrl()).toString();
+    await markUsed(media.id);
   } else {
     const falImage = await generateFalImage(
-      `Luxury African fashion editorial photo, ${product.fabric}, ${product.category.replace("-", " ")}, elegant, high-end, warm lighting`
+      buildPosterPrompt(`${product.name}, ${product.fabric}, ${product.category.replace("-", " ")}`)
     );
     if (falImage) {
       imageUrl = falImage;
     } else {
       const graphicPath = await generateGraphicCard(product.name, product.fabric);
-      imageUrl = new URL(graphicPath, request.nextUrl.origin).toString();
+      imageUrl = new URL(graphicPath, getPublicSiteUrl()).toString();
     }
   }
 
   const allText = [script.hook, ...script.beats.map((b) => b.text)];
-  const scenes: ReelScene[] = allText.map((text) => ({ imageUrl, text, durationSeconds: 2.5 }));
+  const scenes: ReelScene[] = allText.map((text, i) => ({
+    imageUrl,
+    text,
+    // The voiceover is one sentence meant to be spoken once over the
+    // reel, not per on-screen line — attach it to the first scene only,
+    // and give that scene extra time so a ~10-word sentence isn't cut
+    // short mid-speech (a typical spoken sentence this length runs
+    // 3.5-5s, vs. the standard 2.5s beat duration).
+    durationSeconds: i === 0 ? 4.5 : 2.5,
+    ...(i === 0 ? { voiceoverLine: script.voiceoverLine } : {}),
+  }));
 
   const render = await submitReelRender(scenes);
 
-  const reel = addReel({
+  const reel = await addReel({
     productName: product.name,
     script,
     videoUrl: null,

@@ -10,6 +10,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
   }
 
-  const subscriber = addSubscriber(email, whatsapp);
+  const subscriber = await addSubscriber(email, whatsapp);
   return NextResponse.json({ item: subscriber }, { status: 201 });
 }

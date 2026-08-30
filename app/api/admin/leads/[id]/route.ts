@@ -5,7 +5,7 @@ import { sendInstagramDM } from "@/lib/instagram-client";
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
-  const lead = getLead(id);
+  const lead = await getLead(id);
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (body.action === "approve-send") {
@@ -13,21 +13,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!textToSend) return NextResponse.json({ error: "No draft to send" }, { status: 400 });
 
     const result = await sendInstagramDM(lead.igHandle, textToSend);
-    appendMessage(lead.id, "admin", textToSend);
-    setDraftReply(lead.id, null);
-    if (body.status) setLeadStatus(lead.id, body.status);
+    await appendMessage(lead.id, "admin", textToSend);
+    await setDraftReply(lead.id, null);
+    if (body.status) await setLeadStatus(lead.id, body.status);
 
-    return NextResponse.json({ item: getLead(id), instagram: result });
+    return NextResponse.json({ item: await getLead(id), instagram: result });
   }
 
   if (body.action === "edit-draft") {
-    setDraftReply(lead.id, body.text ?? "");
-    return NextResponse.json({ item: getLead(id) });
+    await setDraftReply(lead.id, body.text ?? "");
+    return NextResponse.json({ item: await getLead(id) });
   }
 
   if (body.action === "set-status") {
-    setLeadStatus(lead.id, body.status);
-    return NextResponse.json({ item: getLead(id) });
+    await setLeadStatus(lead.id, body.status);
+    return NextResponse.json({ item: await getLead(id) });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

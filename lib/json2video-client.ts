@@ -15,6 +15,7 @@ const BASE_URL = "https://api.json2video.com/v2";
 export interface ReelScene {
   imageUrl: string;
   text: string;
+  voiceoverLine?: string;
   durationSeconds: number;
 }
 
@@ -42,6 +43,18 @@ export async function submitReelRender(scenes: ReelScene[]): Promise<SubmitResul
           settings: { "font-size": "5vw", color: "#f8f5f0", "text-align": "center" },
           position: "bottom-center",
         },
+        // Azure TTS via JSON2Video's managed service — free on all plans,
+        // no separate Azure account needed. See lib/ai/reel-script-agent.ts
+        // for where voiceoverLine is generated (a distinct sentence from
+        // the on-screen `text`, meant to be spoken rather than read).
+        ...(scene.voiceoverLine
+          ? [{
+              type: "voice" as const,
+              text: scene.voiceoverLine,
+              voice: "en-US-EmmaMultilingualNeural",
+              model: "azure" as const,
+            }]
+          : []),
       ],
     })),
   };

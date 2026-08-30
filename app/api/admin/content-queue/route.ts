@@ -5,10 +5,11 @@ import { getProductImage } from "@/lib/product-image";
 import { generateCaption } from "@/lib/ai/content-agent";
 import { notifyOwner } from "@/lib/whatsapp-owner-notify";
 import { pickNextMedia, markUsed } from "@/lib/store/media-library";
+import { generateFalImage, buildPosterPrompt } from "@/lib/fal-client";
 import { generateGraphicCard } from "@/lib/graphic-card";
 
 export async function GET() {
-  return NextResponse.json({ items: listContentPosts() });
+  return NextResponse.json({ items: await listContentPosts() });
 }
 
 // Marketing agent: generate a draft Instagram post. Always lands as
@@ -21,24 +22,33 @@ export async function POST(request: NextRequest) {
   const product = productSlug ? getProductBySlug(productSlug) : pickRandomFeatured();
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
-  const contentType = requestedType ?? nextContentType();
+  const contentType = requestedType ?? (await nextContentType());
 
-  // Media selection: prefer an uploaded photo/video not used in the last 30
-  // days; fall back to a generated branded graphic if nothing's eligible.
+  // Media selection: prefer an uploaded photo/video not used in the last
+  // 30 days; next, try an AI-generated editorial photo via fal.ai; fall
+  // back to a generated branded graphic only if neither is available.
   let image: string;
   let imageSource: ContentPost["imageSource"];
-  const media = pickNextMedia();
+  const media = await pickNextMedia();
   if (media) {
     image = media.url;
     imageSource = "media-library";
-    markUsed(media.id);
+    await markUsed(media.id);
   } else {
-    image = await generateGraphicCard(product.name, product.fabric);
-    imageSource = "generated-graphic";
+    const falImage = await generateFalImage(
+      buildPosterPrompt(`${product.name}, ${product.fabric}, ${product.category.replace("-", " ")}`)
+    );
+    if (falImage) {
+      image = falImage;
+      imageSource = "ai-generated";
+    } else {
+      image = await generateGraphicCard(product.name, product.fabric);
+      imageSource = "generated-graphic";
+    }
   }
 
   const draft = await generateCaption(product, contentType);
-  const post = addContentPost({
+  const post = await addContentPost({
     productId: product.id,
     productName: product.name,
     image,

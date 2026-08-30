@@ -28,9 +28,20 @@ export interface Settings {
   // json2video (reel rendering)
   json2videoApiKey: string | null;
 
-  // Stripe (international checkout)
-  stripeSecretKey: string | null;
-  stripePublishableKey: string | null;
+  // Paystack (payment processing)
+  paystackSecretKey: string | null;
+  paystackPublicKey: string | null;
+
+  // Meta Ads (Marketing API — seed ad campaigns)
+  metaAdAccountId: string | null;
+  metaAdsAccessToken: string | null;
+  seedAdBudgetUsd: number;
+
+  // Resend (transactional email via SMTP)
+  resendSmtpHost: string | null;
+  resendSmtpPort: number;
+  resendSmtpUsername: string | null;
+  resendSmtpPassword: string | null;
 }
 
 // Phase 1: in-memory, resets on restart. Every field here falls back to the
@@ -53,8 +64,15 @@ const settings: Settings = {
   falImageModel: "fal-ai/flux/schnell",
   falVideoModel: null,
   json2videoApiKey: null,
-  stripeSecretKey: null,
-  stripePublishableKey: null,
+  paystackSecretKey: null,
+  paystackPublicKey: null,
+  metaAdAccountId: null,
+  metaAdsAccessToken: null,
+  seedAdBudgetUsd: 10,
+  resendSmtpHost: null,
+  resendSmtpPort: 587,
+  resendSmtpUsername: null,
+  resendSmtpPassword: null,
 };
 
 export function getSettings(): Settings {
@@ -77,7 +95,9 @@ export function getSettingsRedacted(): Record<string, unknown> {
     "whatsappBusinessToken",
     "falApiKey",
     "json2videoApiKey",
-    "stripeSecretKey",
+    "paystackSecretKey",
+    "metaAdsAccessToken",
+    "resendSmtpPassword",
   ];
   const out: Record<string, unknown> = { ...settings };
   for (const key of secretKeys) {
@@ -95,7 +115,9 @@ function getEnvFallback(key: keyof Settings): string | undefined {
     whatsappBusinessToken: process.env.WHATSAPP_BUSINESS_TOKEN,
     falApiKey: process.env.FAL_KEY || process.env.FAL_API_KEY,
     json2videoApiKey: process.env.JSON2VIDEO_API_KEY,
-    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    paystackSecretKey: process.env.PAYSTACK_SECRET_KEY,
+    metaAdsAccessToken: process.env.META_ADS_ACCESS_TOKEN,
+    resendSmtpPassword: process.env.RESEND_SMTP_PASSWORD,
   };
   return map[key];
 }
@@ -137,9 +159,30 @@ export function getFalImageModel(): string {
 export function getJson2videoApiKey(): string | null {
   return settings.json2videoApiKey || process.env.JSON2VIDEO_API_KEY || null;
 }
-export function getStripeSecretKey(): string | null {
-  return settings.stripeSecretKey || process.env.STRIPE_SECRET_KEY || null;
+export function getPaystackSecretKey(): string | null {
+  return settings.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY || null;
 }
-export function getStripePublishableKey(): string | null {
-  return settings.stripePublishableKey || process.env.STRIPE_PUBLISHABLE_KEY || null;
+export function getPaystackPublicKey(): string | null {
+  return settings.paystackPublicKey || process.env.PAYSTACK_PUBLIC_KEY || null;
+}
+export function getMetaAdAccountId(): string | null {
+  return settings.metaAdAccountId || process.env.META_AD_ACCOUNT_ID || null;
+}
+export function getMetaAdsAccessToken(): string | null {
+  return settings.metaAdsAccessToken || process.env.META_ADS_ACCESS_TOKEN || null;
+}
+export function getSeedAdBudgetUsd(): number {
+  return settings.seedAdBudgetUsd || 10;
+}
+export function getResendSmtpHost(): string | null {
+  return settings.resendSmtpHost || process.env.RESEND_SMTP_HOST || "smtp.resend.com";
+}
+export function getResendSmtpPort(): number {
+  return settings.resendSmtpPort || Number(process.env.RESEND_SMTP_PORT) || 587;
+}
+export function getResendSmtpUsername(): string | null {
+  return settings.resendSmtpUsername || process.env.RESEND_SMTP_USERNAME || "resend";
+}
+export function getResendSmtpPassword(): string | null {
+  return settings.resendSmtpPassword || process.env.RESEND_SMTP_PASSWORD || null;
 }

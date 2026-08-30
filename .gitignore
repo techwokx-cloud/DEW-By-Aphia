@@ -5,3 +5,9 @@
 .vscode/
 .DS_Store
 *.log
+
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# Runtime-generated content (poster cards) — not part of the repo
+public/generated/*.svg

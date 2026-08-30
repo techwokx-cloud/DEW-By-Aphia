@@ -1,3 +1,5 @@
+import { query, queryOne } from "@/lib/db";
+
 export interface Subscriber {
   id: string;
   email: string;
@@ -5,25 +7,31 @@ export interface Subscriber {
   createdAt: string;
 }
 
-// Phase 1: in-memory. Swap for a Supabase table in Phase 2 — same shape.
-const SUBSCRIBERS: Subscriber[] = [];
-
-export function listSubscribers(): Subscriber[] {
-  return [...SUBSCRIBERS].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+interface SubscriberRow {
+  id: string;
+  email: string;
+  whatsapp: string | null;
+  created_at: string;
 }
 
-export function addSubscriber(email: string, whatsapp?: string | null): Subscriber {
-  const existing = SUBSCRIBERS.find((s) => s.email.toLowerCase() === email.toLowerCase());
-  if (existing) {
-    if (whatsapp) existing.whatsapp = whatsapp;
-    return existing;
-  }
-  const subscriber: Subscriber = {
-    id: `sub_${Date.now()}`,
-    email,
-    whatsapp: whatsapp || null,
-    createdAt: new Date().toISOString(),
-  };
-  SUBSCRIBERS.push(subscriber);
-  return subscriber;
+function fromRow(r: SubscriberRow): Subscriber {
+  return { id: r.id, email: r.email, whatsapp: r.whatsapp, createdAt: new Date(r.created_at).toISOString() };
+}
+
+export async function listSubscribers(): Promise<Subscriber[]> {
+  const rows = await query<SubscriberRow>(`SELECT * FROM subscribers ORDER BY created_at DESC`);
+  return rows.map(fromRow);
+}
+
+export async function addSubscriber(email: string, whatsapp?: string | null): Promise<Subscriber> {
+  const id = `sub_${Date.now()}`;
+  const normalizedEmail = email.toLowerCase();
+  const row = await queryOne<SubscriberRow>(
+    `INSERT INTO subscribers (id, email, whatsapp)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (email) DO UPDATE SET whatsapp = COALESCE(EXCLUDED.whatsapp, subscribers.whatsapp)
+     RETURNING *`,
+    [id, normalizedEmail, whatsapp ?? null]
+  );
+  return fromRow(row!);
 }

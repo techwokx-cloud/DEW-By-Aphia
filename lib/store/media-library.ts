@@ -1,3 +1,4 @@
+import { query, queryOne } from "@/lib/db";
 import { CUSTOM_ORDER_PHOTOS } from "@/lib/custom-orders-data";
 import { COLLECTIONS, HERO_IMAGES } from "@/lib/collections-data";
 
@@ -7,88 +8,88 @@ export interface MediaItem {
   type: "image" | "video";
   uploadedAt: string;
   lastUsedAt: string | null;
-  /** Media tagged for a specific 7-day content window, per the "upload for
-   * 7 days content" request — after that window it's just part of the
-   * general rotation pool. */
   windowExpiresAt: string | null;
 }
 
-/**
- * Phase 1: in-memory + files written to /public/uploads at runtime. Note:
- * Render's filesystem is ephemeral on most plans — uploaded files and this
- * list survive as long as the instance stays up, but WON'T survive a
- * redeploy or restart. For real persistence, wire this to Cloudinary
- * (already in the original tech stack plan) or Supabase Storage — swap the
- * upload handler in app/api/admin/media/route.ts and keep this interface.
- */
-const LIBRARY: MediaItem[] = [];
-
-function seedFromExisting() {
-  if (LIBRARY.length > 0) return;
-  const existingUrls = [
-    ...CUSTOM_ORDER_PHOTOS,
-    ...COLLECTIONS.flatMap((c) => c.images),
-    ...HERO_IMAGES,
-  ];
-
-  for (const url of existingUrls) {
-    LIBRARY.push({
-      id: `media_seed_${Buffer.from(url).toString("base64url").slice(0, 12)}`,
-      url,
-      type: "image",
-      uploadedAt: new Date().toISOString(),
-      lastUsedAt: null,
-      windowExpiresAt: null,
-    });
-  }
-}
-seedFromExisting();
-
-export function listMedia(): MediaItem[] {
-  return [...LIBRARY].sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1));
+interface MediaRow {
+  id: string;
+  url: string;
+  type: MediaItem["type"];
+  uploaded_at: string;
+  last_used_at: string | null;
+  window_expires_at: string | null;
 }
 
-export function addMedia(input: { url: string; type: MediaItem["type"]; windowDays?: number }): MediaItem {
-  const item: MediaItem = {
-    id: `media_${Date.now()}`,
-    url: input.url,
-    type: input.type,
-    uploadedAt: new Date().toISOString(),
-    lastUsedAt: null,
-    windowExpiresAt: input.windowDays
-      ? new Date(Date.now() + input.windowDays * 86400000).toISOString()
-      : null,
+function fromRow(r: MediaRow): MediaItem {
+  return {
+    id: r.id,
+    url: r.url,
+    type: r.type,
+    uploadedAt: new Date(r.uploaded_at).toISOString(),
+    lastUsedAt: r.last_used_at ? new Date(r.last_used_at).toISOString() : null,
+    windowExpiresAt: r.window_expires_at ? new Date(r.window_expires_at).toISOString() : null,
   };
-  LIBRARY.push(item);
-  return item;
 }
 
-export function markUsed(id: string) {
-  const item = LIBRARY.find((m) => m.id === id);
-  if (item) item.lastUsedAt = new Date().toISOString();
+let seeded = false;
+
+/** Seeds the library from existing product/collection photos exactly once
+ * — guarded by a real row count, not a module-level flag, so it's safe
+ * across server restarts and multiple app instances. */
+async function ensureSeeded() {
+  if (seeded) return;
+  const existing = await queryOne<{ count: string }>(`SELECT count(*) FROM media_library`);
+  if (existing && Number(existing.count) > 0) {
+    seeded = true;
+    return;
+  }
+
+  const urls = [...CUSTOM_ORDER_PHOTOS, ...COLLECTIONS.flatMap((c) => c.images), ...HERO_IMAGES];
+  for (const url of urls) {
+    const id = `media_seed_${Buffer.from(url).toString("base64url").slice(0, 12)}`;
+    await queryOne(
+      `INSERT INTO media_library (id, url, type) VALUES ($1, $2, 'image') ON CONFLICT (id) DO NOTHING`,
+      [id, url]
+    );
+  }
+  seeded = true;
 }
 
-/** Picks the next usable media item: prefer items still inside their 7-day
- * window, never repeat something used in the last 30 days. Returns null if
- * everything's been used recently — caller should fall back to a
- * generated graphic in that case. */
-export function pickNextMedia(): MediaItem | null {
-  const now = Date.now();
-  const THIRTY_DAYS = 30 * 86400000;
+export async function listMedia(): Promise<MediaItem[]> {
+  await ensureSeeded();
+  const rows = await query<MediaRow>(`SELECT * FROM media_library ORDER BY uploaded_at DESC`);
+  return rows.map(fromRow);
+}
 
-  const eligible = LIBRARY.filter((m) => {
-    if (!m.lastUsedAt) return true;
-    return now - new Date(m.lastUsedAt).getTime() > THIRTY_DAYS;
-  });
-  if (eligible.length === 0) return null;
+export async function addMedia(input: { url: string; type: MediaItem["type"]; windowDays?: number }): Promise<MediaItem> {
+  await ensureSeeded();
+  const id = `media_${Date.now()}`;
+  const windowExpiresAt = input.windowDays ? new Date(Date.now() + input.windowDays * 86400000).toISOString() : null;
+  const row = await queryOne<MediaRow>(
+    `INSERT INTO media_library (id, url, type, window_expires_at) VALUES ($1, $2, $3, $4) RETURNING *`,
+    [id, input.url, input.type, windowExpiresAt]
+  );
+  return fromRow(row!);
+}
 
-  // Prefer items currently inside their intended 7-day window, oldest-used first
-  const withinWindow = eligible.filter((m) => m.windowExpiresAt && new Date(m.windowExpiresAt).getTime() > now);
-  const pool = withinWindow.length > 0 ? withinWindow : eligible;
+export async function markUsed(id: string): Promise<void> {
+  await queryOne(`UPDATE media_library SET last_used_at = now() WHERE id = $1`, [id]);
+}
 
-  return [...pool].sort((a, b) => {
-    const aUsed = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
-    const bUsed = b.lastUsedAt ? new Date(b.lastUsedAt).getTime() : 0;
-    return aUsed - bUsed;
-  })[0];
+/** Picks the next usable media item: prefer items inside their 7-day
+ * window, never repeat something used in the last 30 days. Returns null
+ * if everything's been used recently — caller falls back to a generated
+ * graphic. Implemented as one SQL query instead of pulling everything
+ * into JS and filtering, now that this is a real table. */
+export async function pickNextMedia(): Promise<MediaItem | null> {
+  await ensureSeeded();
+  const row = await queryOne<MediaRow>(
+    `SELECT * FROM media_library
+     WHERE last_used_at IS NULL OR last_used_at < now() - interval '30 days'
+     ORDER BY
+       (window_expires_at IS NOT NULL AND window_expires_at > now()) DESC,
+       last_used_at ASC NULLS FIRST
+     LIMIT 1`
+  );
+  return row ? fromRow(row) : null;
 }

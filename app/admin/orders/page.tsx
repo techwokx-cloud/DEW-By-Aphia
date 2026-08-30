@@ -34,8 +34,8 @@ export default function AdminOrdersPage() {
           <p className="font-display text-xl text-ink mb-2">No orders yet</p>
           <p className="text-ink-soft text-sm max-w-md mx-auto leading-relaxed mb-4">
             International card orders will appear here once a customer checks out. This needs{" "}
-            <code>STRIPE_SECRET_KEY</code> (and <code>STRIPE_WEBHOOK_SECRET</code> for payment
-            confirmation) set — see Settings.
+            <code>PAYSTACK_SECRET_KEY</code> set (and the webhook URL registered in your
+            Paystack dashboard for payment confirmation) — see Settings.
           </p>
           <a
             href={whatsappOrderLink("Hi, checking in on the orders inbox.")}

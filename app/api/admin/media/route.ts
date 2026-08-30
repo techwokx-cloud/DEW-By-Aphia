@@ -4,7 +4,7 @@ import path from "path";
 import { listMedia, addMedia } from "@/lib/store/media-library";
 
 export async function GET() {
-  return NextResponse.json({ items: listMedia() });
+  return NextResponse.json({ items: await listMedia() });
 }
 
 export async function POST(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to save file" }, { status: 500 });
   }
 
-  const item = addMedia({
+  const item = await addMedia({
     url: `/uploads/${filename}`,
     type: isVideo ? "video" : "image",
     windowDays,

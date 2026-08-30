@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listLeads, findOrCreateLead, appendMessage, setDraftReply } from "@/lib/store/leads";
+import { listLeads, findOrCreateLead, appendMessage, setDraftReply, getLead } from "@/lib/store/leads";
 import { generateDMReply } from "@/lib/ai/dm-agent";
 
 export async function GET() {
-  return NextResponse.json({ items: listLeads() });
+  return NextResponse.json({ items: await listLeads() });
 }
 
 // "Simulate incoming DM" — stands in for the real Instagram webhook until
@@ -17,10 +17,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "igHandle and text are required" }, { status: 400 });
   }
 
-  const lead = findOrCreateLead(igHandle);
-  appendMessage(lead.id, "lead", text);
-  const draft = await generateDMReply(lead.messages);
-  setDraftReply(lead.id, draft.reply);
+  const lead = await findOrCreateLead(igHandle);
+  await appendMessage(lead.id, "lead", text);
+  const updatedLead = (await getLead(lead.id))!;
+  const draft = await generateDMReply(updatedLead.messages);
+  await setDraftReply(lead.id, draft.reply);
 
-  return NextResponse.json({ item: lead, source: draft.source }, { status: 201 });
+  return NextResponse.json({ item: updatedLead, source: draft.source }, { status: 201 });
 }

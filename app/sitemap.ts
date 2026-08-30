@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getAllProducts } from "@/lib/products-data";
 import { COLLECTIONS } from "@/lib/collections-data";
 
-const BASE_URL = "https://dew-by-aphia.onrender.com";
+const BASE_URL = "https://dewbyaphia.online";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages = [

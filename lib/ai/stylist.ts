@@ -20,7 +20,7 @@ export interface StylistReply {
 // OpenAI-compatible API, so the same `openai` SDK works by just pointing
 // baseURL at Groq instead of OpenAI.
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = "openai/gpt-oss-120b"; // llama-3.3-70b-versatile deprecated by Groq June 2026
 
 const SYSTEM_PROMPT = `You are the DEW by Aphia AI Stylist — a warm, confident fashion consultant for
 La Maison du Mode dew, a luxury Ghanaian wax-print and Ankara womenswear house in Accra, Ghana.

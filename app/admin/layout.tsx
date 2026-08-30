@@ -3,13 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, Sparkles, MessageCircle, ShoppingBag, LogOut, ExternalLink, TrendingUp, Mail, ImageIcon, Settings, Film } from "lucide-react";
+import { LayoutDashboard, Package, Sparkles, MessageCircle, ShoppingBag, LogOut, ExternalLink, TrendingUp, Mail, ImageIcon, Settings, Film, Rocket } from "lucide-react";
 
 const NAV = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Sales", href: "/admin/sales", icon: TrendingUp },
   { label: "Marketing", href: "/admin/marketing", icon: Mail },
+  { label: "Seed Ads", href: "/admin/ads", icon: Rocket },
   { label: "Content Queue", href: "/admin/content", icon: Sparkles },
   { label: "Reels", href: "/admin/reels", icon: Film },
   { label: "Media Library", href: "/admin/media", icon: ImageIcon },

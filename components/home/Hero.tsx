@@ -6,12 +6,68 @@ import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { DewMotifCorner } from "@/components/ui/AnkaraMotif";
 
-const ROTATION_IMAGES = [
-  "/collections/hero-1.avif",
-  "/collections/executive-1.avif",
-  "/collections/bridal-1.avif",
-  "/collections/evening-1.avif",
-  "/collections/hero-2.avif",
+interface Slide {
+  image: string;
+  eyebrow: string;
+  headline: [string, string];
+  copy: string;
+  ctaLabel: string;
+  ctaHref: string;
+  secondaryLabel: string;
+  secondaryHref: string;
+}
+
+const SLIDES: Slide[] = [
+  {
+    image: "/collections/hero-1.avif",
+    eyebrow: "Premium African Fashion",
+    headline: ["Bold Heritage.", "Timeless Elegance."],
+    copy: "Exquisite Ghanaian wax prints & Ankara designs, crafted for the modern woman of class.",
+    ctaLabel: "Shop Collections",
+    ctaHref: "/collections",
+    secondaryLabel: "Book a Consultation",
+    secondaryHref: "/consultation",
+  },
+  {
+    image: "/collections/executive-1.avif",
+    eyebrow: "Tailored for the Boardroom",
+    headline: ["Power Dressing,", "Reimagined."],
+    copy: "Structured silhouettes cut from Ankara — made to command a room without saying a word.",
+    ctaLabel: "Shop Executive Wear",
+    ctaHref: "/collections",
+    secondaryLabel: "Book a Consultation",
+    secondaryHref: "/consultation",
+  },
+  {
+    image: "/collections/bridal-1.avif",
+    eyebrow: "Bridal & Occasion",
+    headline: ["Your Day,", "Your Heritage."],
+    copy: "Bespoke bridal pieces that honor tradition while feeling entirely, unmistakably yours.",
+    ctaLabel: "Book a Consultation",
+    ctaHref: "/consultation",
+    secondaryLabel: "View Lookbook",
+    secondaryHref: "/lookbook",
+  },
+  {
+    image: "/collections/evening-1.avif",
+    eyebrow: "After Dark",
+    headline: ["Evening,", "Elevated."],
+    copy: "Fluid lines and rich wax-print detail, designed for the moments worth dressing up for.",
+    ctaLabel: "Shop Evening Wear",
+    ctaHref: "/collections",
+    secondaryLabel: "Book a Consultation",
+    secondaryHref: "/consultation",
+  },
+  {
+    image: "/collections/hero-2.avif",
+    eyebrow: "Made to Order",
+    headline: ["Crafted for", "the Modern Woman."],
+    copy: "Every piece is cut, fitted, and finished by hand — made to order, made for you.",
+    ctaLabel: "Start Your Order",
+    ctaHref: "/custom-design",
+    secondaryLabel: "Book a Consultation",
+    secondaryHref: "/consultation",
+  },
 ];
 
 export function Hero() {
@@ -19,84 +75,88 @@ export function Hero() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setActive((i) => (i + 1) % ROTATION_IMAGES.length);
-    }, 4500);
+      setActive((i) => (i + 1) % SLIDES.length);
+    }, 5500);
     return () => clearInterval(id);
   }, []);
 
+  const slide = SLIDES[active];
+
   return (
     <section className="relative overflow-hidden bg-ink">
-      <div className="grid lg:grid-cols-2 min-h-[560px] lg:min-h-[620px]">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative z-10 flex flex-col justify-center px-6 sm:px-10 lg:px-16 py-16 lg:py-0"
-        >
-          <p className="eyebrow text-gold mb-5">Premium African Fashion</p>
-          <h1 className="font-display text-[2.6rem] leading-[1.08] sm:text-6xl lg:text-[3.6rem] xl:text-[4.2rem] text-cream text-balance">
-            Bold Heritage.
-            <br />
-            Timeless Elegance.
-          </h1>
-          <div className="w-14 h-px bg-gold mt-7 mb-6" />
-          <p className="max-w-md text-cream/70 text-base leading-relaxed">
-            Exquisite Ghanaian wax prints &amp; Ankara designs, crafted for the modern
-            woman of class.
-          </p>
-          <div className="flex flex-wrap gap-4 mt-9">
-            <Button href="/collections">Shop Collections</Button>
-            <Button
-              href="/consultation"
-              variant="outline"
-              className="!border-cream/40 !text-cream hover:!bg-cream hover:!text-ink"
-            >
-              Book a Consultation
-            </Button>
-          </div>
-        </motion.div>
+      <div className="relative min-h-[560px] sm:min-h-[620px] lg:min-h-[680px]">
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={slide.image}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={slide.image}
+              alt={`DEW by Aphia — ${slide.headline.join(" ")}`}
+              fill
+              priority={active === 0}
+              sizes="100vw"
+              className="object-cover"
+            />
+          </motion.div>
+        </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 1.02 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="relative min-h-[320px] lg:min-h-0 overflow-hidden"
-        >
-          <AnimatePresence mode="sync">
-            <motion.div
-              key={ROTATION_IMAGES[active]}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.1, ease: "easeInOut" }}
-              className="absolute inset-0"
-            >
-              <Image
-                src={ROTATION_IMAGES[active]}
-                alt="DEW by Aphia — bold heritage, timeless elegance"
-                fill
-                priority={active === 0}
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-              />
-            </motion.div>
-          </AnimatePresence>
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/50 via-transparent to-primary-deep/10" />
-          <DewMotifCorner className="absolute top-6 left-6 w-10 h-10 opacity-70" tone="gold" />
-          <DewMotifCorner className="absolute bottom-6 right-6 w-10 h-10 opacity-70 rotate-180" tone="gold" />
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-            {ROTATION_IMAGES.map((img, i) => (
-              <button
-                key={img}
-                aria-label={`Show slide ${i + 1}`}
-                onClick={() => setActive(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === active ? "w-6 bg-gold" : "w-1.5 bg-cream/40"
-                }`}
-              />
-            ))}
+        {/* Legibility scrim: darker at the left where text sits, lighter toward the right */}
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/45 to-ink/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent" />
+
+        <DewMotifCorner className="absolute top-6 left-6 w-10 h-10 opacity-70 z-10" tone="gold" />
+        <DewMotifCorner className="absolute bottom-6 right-6 w-10 h-10 opacity-70 rotate-180 z-10" tone="gold" />
+
+        <div className="relative z-10 flex h-full min-h-[560px] sm:min-h-[620px] lg:min-h-[680px] items-center">
+          <div className="px-6 sm:px-10 lg:px-16 max-w-2xl py-16 lg:py-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={slide.headline.join(" ")}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              >
+                <p className="eyebrow text-gold mb-5">{slide.eyebrow}</p>
+                <h1 className="font-display text-[2.6rem] leading-[1.08] sm:text-6xl lg:text-[3.6rem] xl:text-[4.2rem] text-cream text-balance">
+                  {slide.headline[0]}
+                  <br />
+                  {slide.headline[1]}
+                </h1>
+                <div className="w-14 h-px bg-gold mt-7 mb-6" />
+                <p className="max-w-md text-cream/80 text-base leading-relaxed">{slide.copy}</p>
+                <div className="flex flex-wrap gap-4 mt-9">
+                  <Button href={slide.ctaHref}>{slide.ctaLabel}</Button>
+                  <Button
+                    href={slide.secondaryHref}
+                    variant="outline"
+                    className="!border-cream/40 !text-cream hover:!bg-cream hover:!text-ink"
+                  >
+                    {slide.secondaryLabel}
+                  </Button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </motion.div>
+        </div>
+
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {SLIDES.map((s, i) => (
+            <button
+              key={s.image}
+              aria-label={`Show slide ${i + 1}: ${s.headline.join(" ")}`}
+              onClick={() => setActive(i)}
+              className={`h-1.5 rounded-full transition-all ${
+                i === active ? "w-6 bg-gold" : "w-1.5 bg-cream/40"
+              }`}
+            />
+          ))}
+        </div>
       </div>
 
       <TrustBadges />

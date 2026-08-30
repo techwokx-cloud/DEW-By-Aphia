@@ -50,3 +50,23 @@ export async function generateFalImage(prompt: string): Promise<string | null> {
 }
 
 export const falConfigured = () => Boolean(getFalApiKey());
+
+const POSTER_STYLES = [
+  "bold minimalist graphic design poster, large geometric color blocks, strong typography-inspired composition",
+  "editorial fashion poster with African wax-print pattern motifs woven into an abstract graphic layout",
+  "high-contrast modern poster design, clean negative space, gold and deep purple color palette",
+  "textured collage-style poster combining fabric pattern swatches and bold graphic shapes",
+];
+
+/** Builds a poster-style, graphic-design prompt for fal.ai — deliberately
+ * NOT photorealistic fashion photography. Diffusion models routinely
+ * garble any text they attempt to render, so this asks for abstract
+ * graphic-design backdrops (color, pattern, composition) rather than
+ * legible text; actual headline/caption text still comes from
+ * generateGraphicCard's SVG templates, which render text perfectly.
+ * Rotates through a few distinct style directions so consecutive images
+ * don't look identical. */
+export function buildPosterPrompt(subject: string): string {
+  const style = POSTER_STYLES[Math.floor(Math.random() * POSTER_STYLES.length)];
+  return `${style}. Theme: ${subject}, luxury Ghanaian fashion brand DEW by Aphia. No readable text or words in the image — pure graphic design and color.`;
+}

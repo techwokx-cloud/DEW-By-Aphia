@@ -19,8 +19,15 @@ interface SettingsShape {
   falApiKey: FieldState;
   falImageModel: string;
   json2videoApiKey: FieldState;
-  stripeSecretKey: FieldState;
-  stripePublishableKey: string | null;
+  paystackSecretKey: FieldState;
+  paystackPublicKey: string | null;
+  resendSmtpHost: string | null;
+  resendSmtpPort: number;
+  resendSmtpUsername: string | null;
+  resendSmtpPassword: FieldState;
+  metaAdAccountId: string | null;
+  metaAdsAccessToken: FieldState;
+  seedAdBudgetUsd: number;
 }
 
 function SecretField({
@@ -98,9 +105,20 @@ export default function AdminSettingsPage() {
   const [j2vKey, setJ2vKey] = useState("");
   const [j2vStatus, setJ2vStatus] = useState<FieldState>(null);
 
-  const [stripeSecret, setStripeSecret] = useState("");
-  const [stripeStatus, setStripeStatus] = useState<FieldState>(null);
-  const [stripePublishable, setStripePublishable] = useState("");
+  const [paystackSecret, setPaystackSecret] = useState("");
+  const [paystackStatus, setPaystackStatus] = useState<FieldState>(null);
+  const [paystackPublic, setPaystackPublic] = useState("");
+
+  const [resendHost, setResendHost] = useState("smtp.resend.com");
+  const [resendPort, setResendPort] = useState(587);
+  const [resendUsername, setResendUsername] = useState("resend");
+  const [resendPassword, setResendPassword] = useState("");
+  const [resendStatus, setResendStatus] = useState<FieldState>(null);
+
+  const [metaAdAccountId, setMetaAdAccountId] = useState("");
+  const [metaAdsToken, setMetaAdsToken] = useState("");
+  const [metaAdsStatus, setMetaAdsStatus] = useState<FieldState>(null);
+  const [seedAdBudget, setSeedAdBudget] = useState(10);
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -120,8 +138,15 @@ export default function AdminSettingsPage() {
         setFalStatus(s.falApiKey);
         setFalModel(s.falImageModel || "fal-ai/flux/schnell");
         setJ2vStatus(s.json2videoApiKey);
-        setStripeStatus(s.stripeSecretKey);
-        setStripePublishable(s.stripePublishableKey ?? "");
+        setPaystackStatus(s.paystackSecretKey);
+        setPaystackPublic(s.paystackPublicKey ?? "");
+        setResendHost(s.resendSmtpHost || "smtp.resend.com");
+        setResendPort(s.resendSmtpPort || 587);
+        setResendUsername(s.resendSmtpUsername || "resend");
+        setResendStatus(s.resendSmtpPassword);
+        setMetaAdAccountId(s.metaAdAccountId ?? "");
+        setMetaAdsStatus(s.metaAdsAccessToken);
+        setSeedAdBudget(s.seedAdBudgetUsd || 10);
         setLoaded(true);
       });
   }, []);
@@ -137,7 +162,12 @@ export default function AdminSettingsPage() {
       threadsUserId: threadsUserId || null,
       whatsappPhoneNumberId: waPhoneId || null,
       falImageModel: falModel,
-      stripePublishableKey: stripePublishable || null,
+      paystackPublicKey: paystackPublic || null,
+      resendSmtpHost: resendHost || null,
+      resendSmtpPort: resendPort,
+      resendSmtpUsername: resendUsername || null,
+      metaAdAccountId: metaAdAccountId || null,
+      seedAdBudgetUsd: seedAdBudget,
     };
     // Only send secret fields the admin actually typed something into —
     // an empty password field means "leave whatever's already set alone".
@@ -147,7 +177,9 @@ export default function AdminSettingsPage() {
     if (waBizToken) payload.whatsappBusinessToken = waBizToken;
     if (falKey) payload.falApiKey = falKey;
     if (j2vKey) payload.json2videoApiKey = j2vKey;
-    if (stripeSecret) payload.stripeSecretKey = stripeSecret;
+    if (paystackSecret) payload.paystackSecretKey = paystackSecret;
+    if (resendPassword) payload.resendSmtpPassword = resendPassword;
+    if (metaAdsToken) payload.metaAdsAccessToken = metaAdsToken;
 
     const res = await fetch("/api/admin/settings", {
       method: "PATCH",
@@ -161,14 +193,18 @@ export default function AdminSettingsPage() {
     setWaBizStatus(data.item.whatsappBusinessToken);
     setFalStatus(data.item.falApiKey);
     setJ2vStatus(data.item.json2videoApiKey);
-    setStripeStatus(data.item.stripeSecretKey);
+    setPaystackStatus(data.item.paystackSecretKey);
+    setResendStatus(data.item.resendSmtpPassword);
+    setMetaAdsStatus(data.item.metaAdsAccessToken);
     setIgToken("");
     setFbToken("");
     setThreadsToken("");
     setWaBizToken("");
     setFalKey("");
     setJ2vKey("");
-    setStripeSecret("");
+    setPaystackSecret("");
+    setResendPassword("");
+    setMetaAdsToken("");
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -188,7 +224,7 @@ export default function AdminSettingsPage() {
         <div className="rounded-md border border-gold/40 bg-gold/[0.06] px-4 py-3 flex items-start gap-2">
           <Lock size={14} className="text-gold shrink-0 mt-0.5" strokeWidth={1.75} />
           <p className="text-xs text-ink-soft leading-relaxed">
-            These are real credentials for real accounts (Meta, Stripe, fal.ai, json2video).
+            These are real credentials for real accounts (Meta, Paystack, Resend, fal.ai, json2video).
             This page is behind your admin password, and secret values are never sent back to
             the browser after saving — but treat this like any other credentials vault.
           </p>
@@ -251,16 +287,68 @@ export default function AdminSettingsPage() {
           <SecretField label="API Key" value={j2vKey} onChange={setJ2vKey} hint="json2video.com — free tier available" />
         </Section>
 
-        <Section title="Stripe (international checkout)" status={stripeStatus}>
-          <SecretField label="Secret Key" value={stripeSecret} onChange={setStripeSecret} hint="Starts with sk_live_ or sk_test_" />
+        <Section title="Paystack (international checkout)" status={paystackStatus}>
+          <SecretField label="Secret Key" value={paystackSecret} onChange={setPaystackSecret} hint="Starts with sk_live_ or sk_test_ — from your Paystack dashboard → Settings → API Keys" />
           <div>
-            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Publishable Key</label>
-            <input value={stripePublishable} onChange={(e) => setStripePublishable(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
+            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Public Key</label>
+            <input value={paystackPublic} onChange={(e) => setPaystackPublic(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
           </div>
           <p className="text-xs text-ink-soft">
-            Also set <code>STRIPE_WEBHOOK_SECRET</code> as an environment variable (not here —
-            it's tied to a specific webhook endpoint URL registered in your Stripe dashboard).
+            Also register <code>https://your-domain/api/webhooks/paystack</code> as your Webhook
+            URL in Paystack → Settings → API Keys &amp; Webhooks — that's what confirms a
+            payment actually went through.
           </p>
+        </Section>
+
+        <Section title="Resend (Transactional Email)" status={resendStatus}>
+          <SecretField label="SMTP Password (API Key)" value={resendPassword} onChange={setResendPassword} hint="From resend.com/api-keys — starts with re_" />
+          <div>
+            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">SMTP Host</label>
+            <input value={resendHost} onChange={(e) => setResendHost(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">SMTP Port</label>
+            <select
+              value={resendPort}
+              onChange={(e) => setResendPort(Number(e.target.value))}
+              className="w-full max-w-xs border border-line px-4 py-3 text-sm outline-none focus:border-primary"
+            >
+              <option value={587}>587 (TLS — recommended)</option>
+              <option value={465}>465 (SSL)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">SMTP Username</label>
+            <input value={resendUsername} onChange={(e) => setResendUsername(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
+          </div>
+        </Section>
+
+        <Section title="Meta Ads (Seed Ad Campaigns)" status={metaAdsStatus}>
+          <p className="text-xs text-ink-soft -mt-1 mb-3">
+            A minimum $10 ad runs every month for 10 days, rotating between engagement, leads,
+            and reach — created paused, and only launches once you tap Launch on the Seed Ads
+            page. Uses the same Facebook Page / Instagram Business Account set above; the token
+            here needs the <code>ads_management</code> permission, which your organic posting
+            token may not have.
+          </p>
+          <SecretField label="Marketing API Access Token" value={metaAdsToken} onChange={setMetaAdsToken} hint="Needs ads_management scope — from Meta Business Suite → System Users" />
+          <div>
+            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Ad Account ID</label>
+            <input value={metaAdAccountId} onChange={(e) => setMetaAdAccountId(e.target.value)} placeholder="123456789012345" className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
+            <p className="text-xs text-ink-soft mt-1.5">Numbers only, no "act_" prefix — found in Meta Ads Manager → Account Overview.</p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Monthly Budget (USD)</label>
+            <input
+              type="number"
+              min={10}
+              step={1}
+              value={seedAdBudget}
+              onChange={(e) => setSeedAdBudget(Math.max(10, Number(e.target.value)))}
+              className="w-full max-w-xs border border-line px-4 py-3 text-sm outline-none focus:border-primary"
+            />
+            <p className="text-xs text-ink-soft mt-1.5">$10 minimum, spent over 10 days each month.</p>
+          </div>
         </Section>
 
         <div>

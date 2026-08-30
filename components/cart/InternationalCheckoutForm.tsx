@@ -114,7 +114,7 @@ export function InternationalCheckoutForm({ items, subtotal }: { items: CartItem
         {loading ? "Redirecting..." : "Pay with Card"}
       </button>
       <p className="text-center text-xs text-ink-soft">
-        Made to order · 10-14 working days before shipment · Secure checkout via Stripe
+        Made to order · 10-14 working days before shipment · Secure checkout via Paystack
       </p>
     </form>
   );

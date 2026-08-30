@@ -6,34 +6,50 @@ import { getAllProducts } from "@/lib/products-data";
 import { generateCaption } from "@/lib/ai/content-agent";
 import { notifyOwner } from "@/lib/whatsapp-owner-notify";
 import { pickNextMedia, markUsed } from "@/lib/store/media-library";
+import { generateFalImage, buildPosterPrompt } from "@/lib/fal-client";
 import { generateGraphicCard } from "@/lib/graphic-card";
 
 /**
  * Hit this on a schedule (e.g. daily) from an external cron trigger — this
  * route itself doesn't run on a timer, Next.js can't do that. On Render:
  * Dashboard → New → Cron Job → same repo → command
- * `curl https://your-app.onrender.com/api/cron/generate-content` → schedule
+ * `curl https://dewbyaphia.online/api/cron/generate-content` → schedule
  * "0 9 * * *" (daily at 9am). It's a no-op most days; it only actually
  * generates once the cadence in Settings (default 15 days) has elapsed,
  * which naturally lands around twice a month.
  */
 export async function GET() {
   const settings = getSettings();
-  if (!isDue(settings.cadenceDays)) {
+  if (!(await isDue(settings.cadenceDays))) {
     return NextResponse.json({ generated: false, reason: "not_due" });
   }
 
   const products = getAllProducts().filter((p) => p.featured);
   const product = products[Math.floor(Math.random() * products.length)] ?? getAllProducts()[0];
-  const contentType = nextContentType();
+  const contentType = await nextContentType();
 
-  const media = pickNextMedia();
-  const image = media ? media.url : await generateGraphicCard(product.name, product.fabric);
-  const imageSource = media ? "media-library" : "generated-graphic";
-  if (media) markUsed(media.id);
+  const media = await pickNextMedia();
+  let image: string;
+  let imageSource: "media-library" | "ai-generated" | "generated-graphic";
+  if (media) {
+    image = media.url;
+    imageSource = "media-library";
+    await markUsed(media.id);
+  } else {
+    const falImage = await generateFalImage(
+      buildPosterPrompt(`${product.name}, ${product.fabric}, ${product.category.replace("-", " ")}`)
+    );
+    if (falImage) {
+      image = falImage;
+      imageSource = "ai-generated";
+    } else {
+      image = await generateGraphicCard(product.name, product.fabric);
+      imageSource = "generated-graphic";
+    }
+  }
 
   const draft = await generateCaption(product, contentType);
-  const post = addContentPost({
+  const post = await addContentPost({
     productId: product.id,
     productName: product.name,
     image,
@@ -43,7 +59,7 @@ export async function GET() {
     hashtags: draft.hashtags,
   });
 
-  markGenerated();
+  await markGenerated();
   const notification = await notifyOwner(
     `Scheduled Instagram ${contentType} post ready for review: "${product.name}". Approve it in the DEW admin dashboard.`
   );

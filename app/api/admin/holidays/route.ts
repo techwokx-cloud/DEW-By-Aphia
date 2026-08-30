@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   const product = products[Math.floor(Math.random() * products.length)] ?? getAllProducts()[0];
 
   const draft = await generateOccasionCaption(product, occasion.name, occasion.note);
-  const post = addContentPost({
+  const post = await addContentPost({
     productId: product.id,
     productName: product.name,
     image: getProductImage(product),

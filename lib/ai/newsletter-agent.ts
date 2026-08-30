@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { getAllProducts } from "@/lib/products-data";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = "openai/gpt-oss-120b"; // llama-3.3-70b-versatile deprecated by Groq June 2026
 
 export interface EmailDraft {
   subject: string;
