@@ -22,12 +22,14 @@ CREATE INDEX IF NOT EXISTS idx_orders_paystack_ref ON orders (paystack_reference
 
 CREATE TABLE IF NOT EXISTS leads (
   id           TEXT PRIMARY KEY,
-  ig_handle    TEXT NOT NULL UNIQUE,
+  platform     TEXT NOT NULL DEFAULT 'instagram' CHECK (platform IN ('instagram', 'facebook')),
+  handle       TEXT NOT NULL,  -- IG username or Facebook PSID, depending on platform
   status       TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'engaged', 'qualified', 'won', 'lost')),
   messages     JSONB NOT NULL DEFAULT '[]',
   draft_reply  TEXT,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (platform, handle)
 );
 CREATE INDEX IF NOT EXISTS idx_leads_updated_at ON leads (updated_at DESC);
 

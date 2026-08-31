@@ -6,18 +6,20 @@ export async function GET() {
   return NextResponse.json({ items: await listLeads() });
 }
 
-// "Simulate incoming DM" — stands in for the real Instagram webhook until
-// a Meta App is connected (see app/api/instagram/webhook). Appends the
-// message, then has the sales agent draft a reply for human approval.
+// "Simulate incoming DM" — stands in for the real Instagram/Facebook
+// webhooks until Meta Apps are connected (see app/api/instagram/webhook
+// and app/api/facebook/webhook). Appends the message, then has the sales
+// agent draft a reply for human approval.
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
-  const igHandle = (body.igHandle as string)?.trim();
+  const platform = (body.platform as "instagram" | "facebook") || "instagram";
+  const handle = (body.handle as string)?.trim();
   const text = (body.text as string)?.trim();
-  if (!igHandle || !text) {
-    return NextResponse.json({ error: "igHandle and text are required" }, { status: 400 });
+  if (!handle || !text) {
+    return NextResponse.json({ error: "handle and text are required" }, { status: 400 });
   }
 
-  const lead = await findOrCreateLead(igHandle);
+  const lead = await findOrCreateLead(platform, handle);
   await appendMessage(lead.id, "lead", text);
   const updatedLead = (await getLead(lead.id))!;
   const draft = await generateDMReply(updatedLead.messages);

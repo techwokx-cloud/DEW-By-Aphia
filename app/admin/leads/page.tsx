@@ -9,6 +9,7 @@ const STATUS_OPTIONS: Lead["status"][] = ["new", "engaged", "qualified", "won", 
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [simPlatform, setSimPlatform] = useState<"instagram" | "facebook">("instagram");
   const [simHandle, setSimHandle] = useState("");
   const [simText, setSimText] = useState("");
   const [simulating, setSimulating] = useState(false);
@@ -40,7 +41,7 @@ export default function AdminLeadsPage() {
     const res = await fetch("/api/admin/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ igHandle: simHandle, text: simText }),
+      body: JSON.stringify({ platform: simPlatform, handle: simHandle, text: simText }),
     });
     const data = await res.json();
     setSimulating(false);
@@ -73,14 +74,27 @@ export default function AdminLeadsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-ink mb-1">Leads (Instagram)</h1>
+      <h1 className="font-display text-3xl text-ink mb-1">Leads</h1>
       <p className="text-ink-soft text-sm mb-6">
-        Sales agent drafts replies from DMs — nothing sends until you approve it below.
+        Sales agent drafts replies from Instagram and Facebook DMs — nothing sends until you
+        approve it below. (Threads has no public DM API, so it can't feed leads here — Threads
+        stays a posting-only channel.)
       </p>
 
       <form onSubmit={simulateIncoming} className="border border-line rounded-[var(--radius)] bg-white p-4 mb-8 flex flex-wrap gap-3 items-end">
+        <div className="min-w-[130px]">
+          <label className="block text-xs text-ink-soft mb-1">Platform</label>
+          <select
+            value={simPlatform}
+            onChange={(e) => setSimPlatform(e.target.value as "instagram" | "facebook")}
+            className="w-full border border-line px-3 py-2 text-sm outline-none focus:border-primary capitalize"
+          >
+            <option value="instagram">Instagram</option>
+            <option value="facebook">Facebook</option>
+          </select>
+        </div>
         <div className="flex-1 min-w-[140px]">
-          <label className="block text-xs text-ink-soft mb-1">IG handle</label>
+          <label className="block text-xs text-ink-soft mb-1">Handle / PSID</label>
           <input
             value={simHandle}
             onChange={(e) => setSimHandle(e.target.value)}
@@ -109,8 +123,9 @@ export default function AdminLeadsPage() {
 
       {leads.length === 0 ? (
         <p className="text-ink-soft text-sm">
-          No leads yet. Once the Instagram webhook is connected, real DMs will appear here — for
-          now, use &ldquo;Simulate incoming message&rdquo; above to test the sales agent.
+          No leads yet. Once the Instagram and Facebook webhooks are connected, real DMs will
+          appear here — for now, use &ldquo;Simulate incoming message&rdquo; above to test the
+          sales agent.
         </p>
       ) : (
         <div className="grid lg:grid-cols-[240px_1fr] gap-6">
@@ -123,8 +138,10 @@ export default function AdminLeadsPage() {
                   active?.id === l.id ? "bg-primary/[0.06]" : "hover:bg-primary/[0.03]"
                 }`}
               >
-                <p className="text-ink font-medium">{l.igHandle}</p>
-                <p className="text-xs text-ink-soft mt-0.5 capitalize">{l.status}</p>
+                <p className="text-ink font-medium">{l.handle}</p>
+                <p className="text-xs text-ink-soft mt-0.5">
+                  <span className="capitalize">{l.platform}</span> · <span className="capitalize">{l.status}</span>
+                </p>
               </button>
             ))}
           </div>
@@ -132,7 +149,10 @@ export default function AdminLeadsPage() {
           {active && (
             <div className="border border-line rounded-[var(--radius)] bg-white p-5">
               <div className="flex items-center justify-between mb-4">
-                <p className="font-medium text-ink">{active.igHandle}</p>
+                <div>
+                  <p className="font-medium text-ink">{active.handle}</p>
+                  <p className="text-xs text-ink-soft capitalize">{active.platform}</p>
+                </div>
                 <select
                   value={active.status}
                   onChange={(e) => changeStatus(e.target.value as Lead["status"])}

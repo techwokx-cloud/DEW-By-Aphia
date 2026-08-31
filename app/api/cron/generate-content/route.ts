@@ -5,9 +5,7 @@ import { addContentPost, nextContentType } from "@/lib/store/content-queue";
 import { getAllProducts } from "@/lib/products-data";
 import { generateCaption } from "@/lib/ai/content-agent";
 import { notifyOwner } from "@/lib/whatsapp-owner-notify";
-import { pickNextMedia, markUsed } from "@/lib/store/media-library";
-import { generateFalImage, buildPosterPrompt } from "@/lib/fal-client";
-import { generateGraphicCard } from "@/lib/graphic-card";
+import { pickContentImage } from "@/lib/content-image";
 
 /**
  * Hit this on a schedule (e.g. daily) from an external cron trigger — this
@@ -28,25 +26,9 @@ export async function GET() {
   const product = products[Math.floor(Math.random() * products.length)] ?? getAllProducts()[0];
   const contentType = await nextContentType();
 
-  const media = await pickNextMedia();
-  let image: string;
-  let imageSource: "media-library" | "ai-generated" | "generated-graphic";
-  if (media) {
-    image = media.url;
-    imageSource = "media-library";
-    await markUsed(media.id);
-  } else {
-    const falImage = await generateFalImage(
-      buildPosterPrompt(`${product.name}, ${product.fabric}, ${product.category.replace("-", " ")}`)
-    );
-    if (falImage) {
-      image = falImage;
-      imageSource = "ai-generated";
-    } else {
-      image = await generateGraphicCard(product.name, product.fabric);
-      imageSource = "generated-graphic";
-    }
-  }
+  // Genuinely mixes real photos, AI poster graphics, and SVG text
+  // graphics — see lib/content-image.ts.
+  const { image, imageSource } = await pickContentImage(product);
 
   const draft = await generateCaption(product, contentType);
   const post = await addContentPost({

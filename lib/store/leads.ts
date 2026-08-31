@@ -9,7 +9,8 @@ export interface DMMessage {
 
 export interface Lead {
   id: string;
-  igHandle: string;
+  platform: "instagram" | "facebook";
+  handle: string;
   status: "new" | "engaged" | "qualified" | "won" | "lost";
   messages: DMMessage[];
   draftReply: string | null;
@@ -19,7 +20,8 @@ export interface Lead {
 
 interface LeadRow {
   id: string;
-  ig_handle: string;
+  platform: Lead["platform"];
+  handle: string;
   status: Lead["status"];
   messages: DMMessage[];
   draft_reply: string | null;
@@ -30,7 +32,8 @@ interface LeadRow {
 function fromRow(r: LeadRow): Lead {
   return {
     id: r.id,
-    igHandle: r.ig_handle,
+    platform: r.platform,
+    handle: r.handle,
     status: r.status,
     messages: r.messages,
     draftReply: r.draft_reply,
@@ -49,17 +52,20 @@ export async function getLead(id: string): Promise<Lead | undefined> {
   return row ? fromRow(row) : undefined;
 }
 
-export async function findOrCreateLead(igHandle: string): Promise<Lead> {
-  const existing = await queryOne<LeadRow>(`SELECT * FROM leads WHERE ig_handle = $1`, [igHandle]);
+export async function findOrCreateLead(platform: Lead["platform"], handle: string): Promise<Lead> {
+  const existing = await queryOne<LeadRow>(
+    `SELECT * FROM leads WHERE platform = $1 AND handle = $2`,
+    [platform, handle]
+  );
   if (existing) return fromRow(existing);
 
   const id = `lead_${Date.now()}`;
   const row = await queryOne<LeadRow>(
-    `INSERT INTO leads (id, ig_handle, status, messages, draft_reply)
-     VALUES ($1, $2, 'new', '[]', NULL)
-     ON CONFLICT (ig_handle) DO UPDATE SET ig_handle = EXCLUDED.ig_handle
+    `INSERT INTO leads (id, platform, handle, status, messages, draft_reply)
+     VALUES ($1, $2, $3, 'new', '[]', NULL)
+     ON CONFLICT (platform, handle) DO UPDATE SET handle = EXCLUDED.handle
      RETURNING *`,
-    [id, igHandle]
+    [id, platform, handle]
   );
   return fromRow(row!);
 }

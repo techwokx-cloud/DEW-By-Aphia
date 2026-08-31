@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Check, Lock } from "lucide-react";
+import { Save, Check, Lock, RefreshCw } from "lucide-react";
 
 type FieldState = string | "SET_IN_SETTINGS" | "SET_IN_ENV" | null;
 
@@ -35,12 +35,18 @@ function SecretField({
   value,
   onChange,
   hint,
+  status,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   hint?: string;
+  status?: FieldState;
 }) {
+  const placeholder =
+    status === "SET_IN_SETTINGS" ? "•••••••••••••••• (saved — leave blank to keep)"
+    : status === "SET_IN_ENV" ? "•••••••••••••••• (set via server .env)"
+    : "Not set";
   return (
     <div>
       <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">{label}</label>
@@ -48,8 +54,8 @@ function SecretField({
         type="password"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Not set"
-        className="w-full border border-line px-4 py-3 text-sm text-ink outline-none focus:border-primary font-mono"
+        placeholder={placeholder}
+        className="w-full border border-line px-4 py-3 text-sm text-ink outline-none focus:border-primary font-mono placeholder:text-ink-soft/70"
       />
       {hint && <p className="text-xs text-ink-soft mt-1.5">{hint}</p>}
     </div>
@@ -101,6 +107,8 @@ export default function AdminSettingsPage() {
   const [falKey, setFalKey] = useState("");
   const [falStatus, setFalStatus] = useState<FieldState>(null);
   const [falModel, setFalModel] = useState("fal-ai/flux/schnell");
+  const [savingFalModel, setSavingFalModel] = useState(false);
+  const [falModelSaved, setFalModelSaved] = useState(false);
 
   const [j2vKey, setJ2vKey] = useState("");
   const [j2vStatus, setJ2vStatus] = useState<FieldState>(null);
@@ -150,6 +158,19 @@ export default function AdminSettingsPage() {
         setLoaded(true);
       });
   }, []);
+
+  async function saveFalModel() {
+    setSavingFalModel(true);
+    setFalModelSaved(false);
+    await fetch("/api/admin/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ falImageModel: falModel }),
+    });
+    setSavingFalModel(false);
+    setFalModelSaved(true);
+    setTimeout(() => setFalModelSaved(false), 2000);
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -231,7 +252,7 @@ export default function AdminSettingsPage() {
         </div>
 
         <Section title="Instagram" status={igStatus}>
-          <SecretField label="Access Token" value={igToken} onChange={setIgToken} hint="From your Meta Developer App, after Instagram Business Account setup." />
+          <SecretField label="Access Token" value={igToken} onChange={setIgToken} hint="From your Meta Developer App, after Instagram Business Account setup." status={igStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Business Account ID</label>
             <input value={igAccountId} onChange={(e) => setIgAccountId(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary" />
@@ -239,7 +260,7 @@ export default function AdminSettingsPage() {
         </Section>
 
         <Section title="Facebook Page" status={fbStatus}>
-          <SecretField label="Page Access Token" value={fbToken} onChange={setFbToken} />
+          <SecretField label="Page Access Token" value={fbToken} onChange={setFbToken} status={fbStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Page ID</label>
             <input value={fbPageId} onChange={(e) => setFbPageId(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary" />
@@ -247,7 +268,7 @@ export default function AdminSettingsPage() {
         </Section>
 
         <Section title="Threads" status={threadsStatus}>
-          <SecretField label="Access Token" value={threadsToken} onChange={setThreadsToken} hint="Separate app review from Instagram/Facebook, even though same Meta ecosystem." />
+          <SecretField label="Access Token" value={threadsToken} onChange={setThreadsToken} hint="Separate app review from Instagram/Facebook, even though same Meta ecosystem." status={threadsStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Threads User ID</label>
             <input value={threadsUserId} onChange={(e) => setThreadsUserId(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary" />
@@ -255,7 +276,7 @@ export default function AdminSettingsPage() {
         </Section>
 
         <Section title="WhatsApp Business (owner notifications)" status={waBizStatus}>
-          <SecretField label="Business API Token" value={waBizToken} onChange={setWaBizToken} hint="Different from your customer-facing wa.me ordering number." />
+          <SecretField label="Business API Token" value={waBizToken} onChange={setWaBizToken} hint="Different from your customer-facing wa.me ordering number." status={waBizStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Phone Number ID</label>
             <input value={waPhoneId} onChange={(e) => setWaPhoneId(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary" />
@@ -267,28 +288,48 @@ export default function AdminSettingsPage() {
         </Section>
 
         <Section title="fal.ai (AI image/video generation)" status={falStatus}>
-          <SecretField label="API Key" value={falKey} onChange={setFalKey} hint="fal.ai/dashboard/keys" />
+          <SecretField label="API Key" value={falKey} onChange={setFalKey} hint="fal.ai/dashboard/keys" status={falStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Image Model</label>
-            <input
-              value={falModel}
-              onChange={(e) => setFalModel(e.target.value)}
-              placeholder="fal-ai/flux/schnell"
-              className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono"
-            />
+            <div className="flex gap-2">
+              <select
+                value={falModel}
+                onChange={(e) => setFalModel(e.target.value)}
+                className="flex-1 border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono bg-white"
+              >
+                <option value="fal-ai/flux/schnell">FLUX.1 [schnell] — fast &amp; cheap (current default)</option>
+                <option value="fal-ai/flux/dev">FLUX.1 [dev] — higher quality, slower</option>
+                <option value="fal-ai/flux-pro/v1.1-ultra">FLUX1.1 [pro] ultra — up to 2K, best photo realism</option>
+                <option value="fal-ai/ideogram/v3">Ideogram V3 — built for posters/logos, best text-in-image rendering</option>
+                <option value="fal-ai/recraft-v3">Recraft V3 — vector/brand-system output, also strong at text</option>
+                <option value="fal-ai/nano-banana-2">Nano Banana 2 (Google) — fast, strong text rendering</option>
+              </select>
+              <button
+                type="button"
+                onClick={saveFalModel}
+                disabled={savingFalModel}
+                className="shrink-0 flex items-center gap-1.5 border border-primary text-primary px-4 py-2.5 text-xs uppercase tracking-wide hover:bg-primary hover:text-cream transition-colors disabled:opacity-50"
+              >
+                {falModelSaved ? <Check size={13} /> : <RefreshCw size={13} className={savingFalModel ? "animate-spin" : ""} />}
+                {savingFalModel ? "Updating…" : falModelSaved ? "Updated" : "Update"}
+              </button>
+            </div>
             <p className="text-xs text-ink-soft mt-1.5">
-              Any fal.ai model slug that accepts a text prompt (check fal.ai/models for current
-              options and exact input format before switching).
+              Given the poster-style graphics this app generates, <strong>Ideogram V3</strong> or{" "}
+              <strong>Recraft V3</strong> are worth trying first — most other models (including
+              FLUX) render in-image text unreliably, which is why headlines are drawn separately
+              as crisp SVG text rather than left to the AI model. Check current pricing/availability
+              at fal.ai/models before switching, since the catalog changes often.
             </p>
           </div>
         </Section>
 
         <Section title="json2video (Reel rendering)" status={j2vStatus}>
-          <SecretField label="API Key" value={j2vKey} onChange={setJ2vKey} hint="json2video.com — free tier available" />
+          <SecretField label="API Key" value={j2vKey} onChange={setJ2vKey} hint="json2video.com — free tier available" status={j2vStatus} />
         </Section>
 
         <Section title="Paystack (international checkout)" status={paystackStatus}>
-          <SecretField label="Secret Key" value={paystackSecret} onChange={setPaystackSecret} hint="Starts with sk_live_ or sk_test_ — from your Paystack dashboard → Settings → API Keys" />
+          <SecretField label="Secret Key" value={paystackSecret} onChange={setPaystackSecret} hint="Starts with sk_live_ or sk_test_ — from your Paystack dashboard → Settings → API Keys" status={paystackStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Public Key</label>
             <input value={paystackPublic} onChange={(e) => setPaystackPublic(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
@@ -301,7 +342,7 @@ export default function AdminSettingsPage() {
         </Section>
 
         <Section title="Resend (Transactional Email)" status={resendStatus}>
-          <SecretField label="SMTP Password (API Key)" value={resendPassword} onChange={setResendPassword} hint="From resend.com/api-keys — starts with re_" />
+          <SecretField label="SMTP Password (API Key)" value={resendPassword} onChange={setResendPassword} hint="From resend.com/api-keys — starts with re_" status={resendStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">SMTP Host</label>
             <input value={resendHost} onChange={(e) => setResendHost(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
@@ -331,7 +372,7 @@ export default function AdminSettingsPage() {
             here needs the <code>ads_management</code> permission, which your organic posting
             token may not have.
           </p>
-          <SecretField label="Marketing API Access Token" value={metaAdsToken} onChange={setMetaAdsToken} hint="Needs ads_management scope — from Meta Business Suite → System Users" />
+          <SecretField label="Marketing API Access Token" value={metaAdsToken} onChange={setMetaAdsToken} hint="Needs ads_management scope — from Meta Business Suite → System Users" status={metaAdsStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Ad Account ID</label>
             <input value={metaAdAccountId} onChange={(e) => setMetaAdAccountId(e.target.value)} placeholder="123456789012345" className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />

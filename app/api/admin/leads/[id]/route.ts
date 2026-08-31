@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLead, appendMessage, setDraftReply, setLeadStatus } from "@/lib/store/leads";
 import { sendInstagramDM } from "@/lib/instagram-client";
+import { sendFacebookDM } from "@/lib/facebook-client";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,12 +13,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const textToSend = body.text ?? lead.draftReply;
     if (!textToSend) return NextResponse.json({ error: "No draft to send" }, { status: 400 });
 
-    const result = await sendInstagramDM(lead.igHandle, textToSend);
+    const result = lead.platform === "facebook"
+      ? await sendFacebookDM(lead.handle, textToSend)
+      : await sendInstagramDM(lead.handle, textToSend);
     await appendMessage(lead.id, "admin", textToSend);
     await setDraftReply(lead.id, null);
     if (body.status) await setLeadStatus(lead.id, body.status);
 
-    return NextResponse.json({ item: await getLead(id), instagram: result });
+    return NextResponse.json({ item: await getLead(id), platformResult: result });
   }
 
   if (body.action === "edit-draft") {

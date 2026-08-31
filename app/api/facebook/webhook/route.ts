@@ -3,23 +3,26 @@ import { findOrCreateLead, appendMessage, setDraftReply, getLead } from "@/lib/s
 import { generateDMReply } from "@/lib/ai/dm-agent";
 
 // Meta's webhook verification handshake — required once, when you register
-// this URL in the Meta App dashboard's webhook settings.
+// this URL in the Meta App dashboard's webhook settings (subscribe the
+// Page to the "messages" field, same App as your Instagram integration
+// if they share a Meta Business Suite).
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const mode = params.get("hub.mode");
   const token = params.get("hub.verify_token");
   const challenge = params.get("hub.challenge");
 
-  if (mode === "subscribe" && token === process.env.IG_WEBHOOK_VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === process.env.FB_WEBHOOK_VERIFY_TOKEN) {
     return new NextResponse(challenge, { status: 200 });
   }
   return NextResponse.json({ error: "verification_failed" }, { status: 403 });
 }
 
-// Real incoming Instagram DM events land here once the webhook is
-// registered with Meta. The sales agent drafts a reply immediately, but
-// nothing sends automatically — it waits in the admin Leads inbox for
-// human approval, per the human-in-the-loop requirement.
+// Real incoming Facebook Page Messenger events land here once the webhook
+// is registered with Meta. Same payload shape as the Instagram webhook —
+// both ride Meta's Messenger Platform — the only difference that matters
+// here is tagging the lead with platform: "facebook" so replies go out
+// through the right Send API / access token.
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body?.entry) return NextResponse.json({ ok: true });
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest) {
       const text = event.message?.text;
       if (!senderId || !text) continue;
 
-      const lead = await findOrCreateLead("instagram", senderId);
+      const lead = await findOrCreateLead("facebook", senderId);
       await appendMessage(lead.id, "lead", text);
       const updatedLead = (await getLead(lead.id))!;
       const draft = await generateDMReply(updatedLead.messages);

@@ -4,9 +4,7 @@ import { getProductBySlug, getAllProducts } from "@/lib/products-data";
 import { getProductImage } from "@/lib/product-image";
 import { generateCaption } from "@/lib/ai/content-agent";
 import { notifyOwner } from "@/lib/whatsapp-owner-notify";
-import { pickNextMedia, markUsed } from "@/lib/store/media-library";
-import { generateFalImage, buildPosterPrompt } from "@/lib/fal-client";
-import { generateGraphicCard } from "@/lib/graphic-card";
+import { pickContentImage } from "@/lib/content-image";
 
 export async function GET() {
   return NextResponse.json({ items: await listContentPosts() });
@@ -24,28 +22,10 @@ export async function POST(request: NextRequest) {
 
   const contentType = requestedType ?? (await nextContentType());
 
-  // Media selection: prefer an uploaded photo/video not used in the last
-  // 30 days; next, try an AI-generated editorial photo via fal.ai; fall
-  // back to a generated branded graphic only if neither is available.
-  let image: string;
-  let imageSource: ContentPost["imageSource"];
-  const media = await pickNextMedia();
-  if (media) {
-    image = media.url;
-    imageSource = "media-library";
-    await markUsed(media.id);
-  } else {
-    const falImage = await generateFalImage(
-      buildPosterPrompt(`${product.name}, ${product.fabric}, ${product.category.replace("-", " ")}`)
-    );
-    if (falImage) {
-      image = falImage;
-      imageSource = "ai-generated";
-    } else {
-      image = await generateGraphicCard(product.name, product.fabric);
-      imageSource = "generated-graphic";
-    }
-  }
+  // Genuinely mixes real photos, AI poster graphics, and SVG text
+  // graphics — see lib/content-image.ts for why this isn't a strict
+  // fallback chain.
+  const { image, imageSource } = await pickContentImage(product);
 
   const draft = await generateCaption(product, contentType);
   const post = await addContentPost({

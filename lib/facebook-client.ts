@@ -29,3 +29,21 @@ export async function publishFacebookPost(imageUrl: string, caption: string) {
 }
 
 export const facebookConfigured = isConfigured;
+
+/** Sends a Facebook Messenger message via the Send API — same request
+ * shape as Instagram's underlying API (both are Meta Messenger Platform),
+ * using the Page access token rather than an Instagram-specific one. */
+export async function sendFacebookDM(recipientPsid: string, text: string) {
+  if (!isConfigured()) {
+    return { sent: false, reason: "not_configured" as const };
+  }
+  const token = getFacebookPageAccessToken();
+
+  const res = await fetch(`${GRAPH_API_BASE}/me/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ recipient: { id: recipientPsid }, message: { text }, access_token: token }),
+  }).then((r) => r.json());
+
+  return { sent: Boolean(res.message_id), messageId: res.message_id, reason: res.message_id ? undefined : ("send_failed" as const) };
+}

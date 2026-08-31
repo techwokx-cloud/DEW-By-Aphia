@@ -65,7 +65,7 @@ export default function AdminOverviewPage() {
   const cards = [
     { label: "Products", value: stats.products, href: "/admin/products", icon: Package },
     { label: "Pending Content Drafts", value: stats.drafts, href: "/admin/content", icon: Sparkles },
-    { label: "Instagram Leads", value: stats.leads, href: "/admin/leads", icon: MessageCircle },
+    { label: "Leads", value: stats.leads, href: "/admin/leads", icon: MessageCircle },
     { label: "Orders", value: stats.orders, href: "/admin/orders", icon: ShoppingBag },
   ];
 
