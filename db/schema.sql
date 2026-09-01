@@ -4,7 +4,9 @@
 
 CREATE TABLE IF NOT EXISTS orders (
   id                 TEXT PRIMARY KEY,
-  channel            TEXT NOT NULL CHECK (channel IN ('international_card', 'local_whatsapp')),
+  channel            TEXT NOT NULL CHECK (channel IN ('international_card', 'local_whatsapp', 'custom_deposit')),
+  customer_name      TEXT,
+  customer_phone     TEXT,
   items              JSONB NOT NULL,
   subtotal           NUMERIC(10,2) NOT NULL,
   shipping_fee       NUMERIC(10,2) NOT NULL,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Check, Users, Sparkles, Heart, ShieldCheck } from "lucide-react";
@@ -98,7 +98,57 @@ export default function CustomDesignPage() {
 function BookingSection() {
   const searchParams = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const referenceDesign = searchParams.get("design") ?? "";
+  const price = searchParams.get("price") ? Number(searchParams.get("price")) : null;
+
+  // Next.js's native #hash scroll can fire before this client component
+  // (inside a Suspense boundary) has actually mounted, so navigating here
+  // via a "#book" link can silently land at the top of the page instead
+  // of the form — scroll explicitly once mounted as a reliable fallback.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#book") {
+      document.getElementById("book")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const name = String(form.get("name") ?? "");
+    const email = String(form.get("email") ?? "");
+    const phone = String(form.get("phone") ?? "");
+    const design = String(form.get("referenceDesign") ?? referenceDesign);
+
+    // Only a design coming from a specific product (with a known price)
+    // goes straight to a deposit payment — a general consultation with
+    // no fixed design/price yet stays a plain "we'll be in touch" request.
+    if (!price) {
+      setSubmitted(true);
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/deposit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, designName: design, price }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setError(data.error || "Couldn't start payment right now — please try again, or message us on WhatsApp instead.");
+        setSubmitting(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't start payment — please try again.");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <section id="book" className="mx-auto max-w-[1400px] px-6 lg:px-10 py-14 lg:py-16 scroll-mt-20">
@@ -107,8 +157,9 @@ function BookingSection() {
         <h1 className="font-display text-4xl text-ink">Let&rsquo;s Create Magic Together</h1>
         <DewMotifDivider className="w-24 h-3 mx-auto mt-5 mb-4" tone="gold" />
         <p className="text-ink-soft text-sm">
-          Tell us what you have in mind — in-store, virtually, or both. There&rsquo;s no
-          payment due until we&rsquo;ve confirmed your design together.
+          {price
+            ? "Tell us a bit about yourself, then confirm your 50% deposit to begin."
+            : "Tell us what you have in mind — in-store, virtually, or both. There's no payment due until we've confirmed your design together."}
         </p>
         <p className="text-ink-soft text-xs mt-2">By appointment, {APPOINTMENT_HOURS}.</p>
       </div>
@@ -134,17 +185,12 @@ function BookingSection() {
               </p>
             </div>
           ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSubmitted(true);
-              }}
-              className="space-y-4"
-            >
+            <form onSubmit={handleSubmit} className="space-y-4">
               {referenceDesign && (
                 <div className="rounded-md border border-gold/40 bg-gold/[0.06] px-4 py-3">
                   <p className="text-xs text-ink-soft">
-                    Referencing design: <span className="text-ink font-medium">{referenceDesign}</span>.
+                    Referencing design: <span className="text-ink font-medium">{referenceDesign}</span>
+                    {price ? <span className="text-ink font-medium"> · ${price.toLocaleString()}</span> : null}.
                     Every custom piece is made specifically for you — if you&rsquo;d like this
                     exact design recreated in your size, say so below; we&rsquo;ll confirm every
                     detail with you before we start.
@@ -169,11 +215,13 @@ function BookingSection() {
                 <Field label="Preferred Date" id="date" type="date" required />
               </div>
               <Field label="Preferred Time" id="time" type="time" required />
+              {error && <p className="text-xs text-red-600">{error}</p>}
               <button
                 type="submit"
-                className="w-full bg-primary text-cream py-3.5 text-sm tracking-[0.08em] uppercase hover:bg-primary-deep transition-colors mt-2"
+                disabled={submitting}
+                className="w-full bg-primary text-cream py-3.5 text-sm tracking-[0.08em] uppercase hover:bg-primary-deep transition-colors mt-2 disabled:opacity-60"
               >
-                Start My Custom Order
+                {submitting ? "Starting payment…" : price ? `Confirm & Pay $${(price * 0.5).toLocaleString()} Deposit` : "Start My Custom Order"}
               </button>
             </form>
           )}

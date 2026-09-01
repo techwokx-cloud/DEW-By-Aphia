@@ -11,12 +11,14 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  channel: "international_card" | "local_whatsapp";
+  channel: "international_card" | "local_whatsapp" | "custom_deposit";
   items: OrderItem[];
   subtotal: number;
   shippingFee: number;
   total: number;
   customerEmail: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
   shippingAddress: {
     name: string;
     line1: string;
@@ -39,6 +41,8 @@ interface OrderRow {
   shipping_fee: string;
   total: string;
   customer_email: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
   shipping_address: Order["shippingAddress"];
   stripe_session_id: string | null;
   paystack_reference: string | null;
@@ -55,6 +59,8 @@ function fromRow(r: OrderRow): Order {
     shippingFee: Number(r.shipping_fee),
     total: Number(r.total),
     customerEmail: r.customer_email,
+    customerName: r.customer_name,
+    customerPhone: r.customer_phone,
     shippingAddress: r.shipping_address,
     stripeSessionId: r.stripe_session_id,
     paystackReference: r.paystack_reference,
@@ -71,8 +77,8 @@ export async function listOrders(): Promise<Order[]> {
 export async function addOrder(input: Omit<Order, "id" | "createdAt">): Promise<Order> {
   const id = `order_${Date.now()}`;
   const row = await queryOne<OrderRow>(
-    `INSERT INTO orders (id, channel, items, subtotal, shipping_fee, total, customer_email, shipping_address, stripe_session_id, paystack_reference, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `INSERT INTO orders (id, channel, items, subtotal, shipping_fee, total, customer_email, customer_name, customer_phone, shipping_address, stripe_session_id, paystack_reference, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
     [
       id,
@@ -82,6 +88,8 @@ export async function addOrder(input: Omit<Order, "id" | "createdAt">): Promise<
       input.shippingFee,
       input.total,
       input.customerEmail,
+      input.customerName,
+      input.customerPhone,
       input.shippingAddress ? JSON.stringify(input.shippingAddress) : null,
       input.stripeSessionId,
       input.paystackReference,
@@ -89,6 +97,11 @@ export async function addOrder(input: Omit<Order, "id" | "createdAt">): Promise<
     ]
   );
   return fromRow(row!);
+}
+
+export async function getOrderByPaystackReference(reference: string): Promise<Order | null> {
+  const row = await queryOne<OrderRow>(`SELECT * FROM orders WHERE paystack_reference = $1`, [reference]);
+  return row ? fromRow(row) : null;
 }
 
 export async function updateOrderByStripeSession(sessionId: string, patch: Partial<Order>): Promise<Order | null> {

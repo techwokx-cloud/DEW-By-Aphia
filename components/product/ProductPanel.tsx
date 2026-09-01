@@ -31,7 +31,7 @@ export function ProductPanel({ product }: { product: Product }) {
     if (requireSize()) setShowOrderModal(true);
   }
 
-  const customOrderHref = `/custom-design?design=${encodeURIComponent(product.name)}#book`;
+  const customOrderHref = `/custom-design?design=${encodeURIComponent(product.name)}&price=${effectivePrice}#book`;
 
   return (
     <div>
@@ -59,10 +59,10 @@ export function ProductPanel({ product }: { product: Product }) {
       ) : (
         <p className="text-xl text-primary font-medium mb-3">${product.price.toLocaleString()}</p>
       )}
-      <p className="text-xs text-ink-soft bg-primary/[0.05] border border-primary/10 rounded-md px-3 py-2 mb-6 leading-relaxed max-w-md">
-        Made to order in your size · 50% deposit, balance due on pickup or shipment · Allow
-        10-14 working days
-      </p>
+      <div className="rounded-md border border-gold/50 bg-gold/[0.08] px-4 py-3 mb-6 leading-relaxed max-w-md">
+        <p className="text-sm text-ink font-medium mb-1">Made to order, just for you</p>
+        <p className="text-sm text-ink-soft leading-relaxed">{MADE_TO_ORDER_NOTE}</p>
+      </div>
       <p className="text-ink-soft text-sm leading-relaxed mb-7 max-w-md">{product.description}</p>
 
       <div className="mb-6">
