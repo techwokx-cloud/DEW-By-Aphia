@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 const sections = [
   {
     title: "1. Orders & Payment",
-    body: "By placing an order with La Maison du Mode dew (\"DEW by Aphia\"), you agree to pay the listed price plus applicable shipping and duties. We accept payment via the methods shown at checkout.",
+    body: "By starting a custom order with La Maison du Mode dew (\"DEW by Aphia\"), you agree to pay a 50% deposit to begin production, with the balance due on pickup or shipment, plus applicable shipping and duties. Deposit and balance payment methods are confirmed with you directly after your consultation.",
   },
   {
     title: "2. Made-to-Order & Custom Pieces",

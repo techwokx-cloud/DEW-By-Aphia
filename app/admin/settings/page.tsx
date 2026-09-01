@@ -134,9 +134,6 @@ export default function AdminSettingsPage() {
   const [j2vKey, setJ2vKey] = useState("");
   const [j2vStatus, setJ2vStatus] = useState<FieldState>(null);
 
-  const [paystackSecret, setPaystackSecret] = useState("");
-  const [paystackStatus, setPaystackStatus] = useState<FieldState>(null);
-  const [paystackPublic, setPaystackPublic] = useState("");
 
   const [heroImages, setHeroImages] = useState<string[]>(["", "", "", "", ""]);
   const [resendHost, setResendHost] = useState("smtp.resend.com");
@@ -169,8 +166,6 @@ export default function AdminSettingsPage() {
         setFalStatus(s.falApiKey);
         setFalModel(s.falImageModel || "fal-ai/flux/schnell");
         setJ2vStatus(s.json2videoApiKey);
-        setPaystackStatus(s.paystackSecretKey);
-        setPaystackPublic(s.paystackPublicKey ?? "");
         setHeroImages(Array.from({ length: 5 }, (_, i) => s.heroImages?.[i] ?? ""));
         setResendHost(s.resendSmtpHost || "smtp.resend.com");
         setResendPort(s.resendSmtpPort || 587);
@@ -208,7 +203,6 @@ export default function AdminSettingsPage() {
       threadsUserId: threadsUserId || null,
       whatsappPhoneNumberId: waPhoneId || null,
       falImageModel: falModel,
-      paystackPublicKey: paystackPublic || null,
       heroImages: heroImages.filter((u) => u.trim()),
       resendSmtpHost: resendHost || null,
       resendSmtpPort: resendPort,
@@ -225,7 +219,6 @@ export default function AdminSettingsPage() {
     if (waBizToken) payload.whatsappBusinessToken = waBizToken;
     if (falKey) payload.falApiKey = falKey;
     if (j2vKey) payload.json2videoApiKey = j2vKey;
-    if (paystackSecret) payload.paystackSecretKey = paystackSecret;
     if (resendPassword) payload.resendSmtpPassword = resendPassword;
     if (metaAdsToken) payload.metaAdsAccessToken = metaAdsToken;
 
@@ -241,7 +234,6 @@ export default function AdminSettingsPage() {
     setWaBizStatus(data.item.whatsappBusinessToken);
     setFalStatus(data.item.falApiKey);
     setJ2vStatus(data.item.json2videoApiKey);
-    setPaystackStatus(data.item.paystackSecretKey);
     setResendStatus(data.item.resendSmtpPassword);
     setMetaAdsStatus(data.item.metaAdsAccessToken);
     setIgToken("");
@@ -250,7 +242,6 @@ export default function AdminSettingsPage() {
     setWaBizToken("");
     setFalKey("");
     setJ2vKey("");
-    setPaystackSecret("");
     setResendPassword("");
     setMetaAdsToken("");
     setSaving(false);
@@ -272,7 +263,7 @@ export default function AdminSettingsPage() {
         <div className="rounded-md border border-gold/40 bg-gold/[0.06] px-4 py-3 flex items-start gap-2">
           <Lock size={14} className="text-gold shrink-0 mt-0.5" strokeWidth={1.75} />
           <p className="text-xs text-ink-soft leading-relaxed">
-            These are real credentials for real accounts (Meta, Paystack, Resend, fal.ai, json2video).
+            These are real credentials for real accounts (Meta, Resend, fal.ai, json2video).
             This page is behind your admin password, and secret values are never sent back to
             the browser after saving — but treat this like any other credentials vault.
           </p>
@@ -353,19 +344,6 @@ export default function AdminSettingsPage() {
 
         <Section title="json2video (Reel rendering)" status={j2vStatus}>
           <SecretField label="API Key" value={j2vKey} onChange={setJ2vKey} hint="json2video.com — free tier available" status={j2vStatus} />
-        </Section>
-
-        <Section title="Paystack (international checkout)" status={paystackStatus}>
-          <SecretField label="Secret Key" value={paystackSecret} onChange={setPaystackSecret} hint="Starts with sk_live_ or sk_test_ — from your Paystack dashboard → Settings → API Keys" status={paystackStatus} />
-          <div>
-            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Public Key</label>
-            <input value={paystackPublic} onChange={(e) => setPaystackPublic(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
-          </div>
-          <p className="text-xs text-ink-soft">
-            Also register <code>https://your-domain/api/webhooks/paystack</code> as your Webhook
-            URL in Paystack → Settings → API Keys &amp; Webhooks — that's what confirms a
-            payment actually went through.
-          </p>
         </Section>
 
         <Section title="Resend (Transactional Email)" status={resendStatus}>

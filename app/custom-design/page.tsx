@@ -1,13 +1,26 @@
+"use client";
+
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Check } from "lucide-react";
+import { Check, Users, Sparkles, Heart, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CustomOrdersGallery } from "@/components/custom-design/CustomOrdersGallery";
+import { DewMotifDivider } from "@/components/ui/AnkaraMotif";
+import { APPOINTMENT_HOURS } from "@/lib/business-info";
 
 const customizations = [
   "Size — made to your exact measurements",
   "Fabric — choose from our wax print & Ankara selection",
   "Color — pick the palette that suits you",
   "Embroidery & detailing — add the finishing touches that make it yours",
+];
+
+const perks = [
+  { icon: Users, label: "In-store & virtual consultations available" },
+  { icon: Sparkles, label: "Personalized one-on-one session" },
+  { icon: Heart, label: "Style advice & design recommendations" },
+  { icon: ShieldCheck, label: "No obligation, just inspiration" },
 ];
 
 export default function CustomDesignPage() {
@@ -23,8 +36,8 @@ export default function CustomDesignPage() {
             <h1 className="font-display text-4xl lg:text-5xl mb-5">Custom Made</h1>
             <p className="text-cream/80 leading-relaxed max-w-md mb-2">Your vision. Our craftsmanship.</p>
             <p className="text-cream/80 leading-relaxed max-w-md mb-6">
-              We create made-to-measure pieces that reflect your style, your personality
-              and your story.
+              Every DEW by Aphia piece is made to order — nothing is pre-sewn or held in stock.
+              Browse the LookBook for inspiration, then start your custom order below.
             </p>
             <ul className="space-y-2.5 mb-8">
               {customizations.map((c) => (
@@ -36,7 +49,7 @@ export default function CustomDesignPage() {
                 </li>
               ))}
             </ul>
-            <Button href="/consultation">Start Your Custom Journey</Button>
+            <Button href="#book">Start Your Custom Journey</Button>
           </div>
           <div className="relative aspect-[4/5] rounded-[var(--radius)] overflow-hidden">
             <Image
@@ -75,21 +88,157 @@ export default function CustomDesignPage() {
         </p>
       </section>
 
-      <section className="bg-primary text-cream">
-        <div className="mx-auto max-w-[1400px] px-6 lg:px-10 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="text-center sm:text-left">
-            <p className="font-display text-2xl mb-1">Let&rsquo;s bring your dream look to life.</p>
-            <p className="text-cream/70 text-sm">Book a consultation to start your custom piece.</p>
-          </div>
-          <Button
-            href="/consultation"
-            variant="outline"
-            className="!border-cream/40 !text-cream hover:!bg-cream hover:!text-primary shrink-0"
-          >
-            Book a Consultation
-          </Button>
+      <Suspense fallback={null}>
+        <BookingSection />
+      </Suspense>
+    </div>
+  );
+}
+
+function BookingSection() {
+  const searchParams = useSearchParams();
+  const [submitted, setSubmitted] = useState(false);
+  const referenceDesign = searchParams.get("design") ?? "";
+
+  return (
+    <section id="book" className="mx-auto max-w-[1400px] px-6 lg:px-10 py-14 lg:py-16 scroll-mt-20">
+      <div className="text-center max-w-lg mx-auto mb-12">
+        <p className="eyebrow text-primary mb-3">Start Your Custom Order</p>
+        <h1 className="font-display text-4xl text-ink">Let&rsquo;s Create Magic Together</h1>
+        <DewMotifDivider className="w-24 h-3 mx-auto mt-5 mb-4" tone="gold" />
+        <p className="text-ink-soft text-sm">
+          Tell us what you have in mind — in-store, virtually, or both. There&rsquo;s no
+          payment due until we&rsquo;ve confirmed your design together.
+        </p>
+        <p className="text-ink-soft text-xs mt-2">By appointment, {APPOINTMENT_HOURS}.</p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-14 items-start">
+        <div className="relative aspect-[4/5] rounded-[var(--radius)] overflow-hidden hidden lg:block">
+          <Image
+            src="/custom-orders/order-05.webp"
+            alt="DEW by Aphia consultation atelier"
+            fill
+            sizes="50vw"
+            className="object-cover"
+          />
         </div>
-      </section>
+
+        <div>
+          {submitted ? (
+            <div className="rounded-[var(--radius)] border border-line bg-white p-10 text-center">
+              <p className="font-display text-2xl text-primary mb-2">Thank you!</p>
+              <p className="text-ink-soft text-sm">
+                We&rsquo;ve received your request and will confirm your consultation by email
+                shortly.
+              </p>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setSubmitted(true);
+              }}
+              className="space-y-4"
+            >
+              {referenceDesign && (
+                <div className="rounded-md border border-gold/40 bg-gold/[0.06] px-4 py-3">
+                  <p className="text-xs text-ink-soft">
+                    Referencing design: <span className="text-ink font-medium">{referenceDesign}</span>.
+                    Every custom piece is made specifically for you — if you&rsquo;d like this
+                    exact design recreated in your size, say so below; we&rsquo;ll confirm every
+                    detail with you before we start.
+                  </p>
+                </div>
+              )}
+              <Field label="Reference Design (optional)" id="referenceDesign" defaultValue={referenceDesign} />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Full Name" id="name" required />
+                <Field label="Email Address" id="email" type="email" required />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Phone Number" id="phone" type="tel" required />
+                <SelectField
+                  label="Consultation Type"
+                  id="type"
+                  options={["Custom Design", "Bridal", "Styling Session", "General Inquiry", "Other"]}
+                />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <SelectField label="Format" id="format" options={["In-store", "Virtual", "Both"]} />
+                <Field label="Preferred Date" id="date" type="date" required />
+              </div>
+              <Field label="Preferred Time" id="time" type="time" required />
+              <button
+                type="submit"
+                className="w-full bg-primary text-cream py-3.5 text-sm tracking-[0.08em] uppercase hover:bg-primary-deep transition-colors mt-2"
+              >
+                Start My Custom Order
+              </button>
+            </form>
+          )}
+
+          <div className="grid grid-cols-2 gap-6 mt-10 pt-8 border-t border-line">
+            {perks.map((p) => (
+              <div key={p.label} className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <p.icon size={15} strokeWidth={1.5} />
+                </span>
+                <p className="text-xs text-ink-soft leading-snug">{p.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  id,
+  type = "text",
+  required = false,
+  defaultValue,
+}: {
+  label: string;
+  id: string;
+  type?: string;
+  required?: boolean;
+  defaultValue?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">
+        {label}
+      </label>
+      <input
+        id={id}
+        name={id}
+        type={type}
+        required={required}
+        defaultValue={defaultValue}
+        className="w-full border border-line bg-white px-4 py-3 text-sm text-ink outline-none focus:border-primary"
+      />
+    </div>
+  );
+}
+
+function SelectField({ label, id, options }: { label: string; id: string; options: string[] }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">
+        {label}
+      </label>
+      <select
+        id={id}
+        name={id}
+        className="w-full border border-line bg-white px-4 py-3 text-sm text-ink outline-none focus:border-primary"
+      >
+        {options.map((o) => (
+          <option key={o}>{o}</option>
+        ))}
+      </select>
     </div>
   );
 }

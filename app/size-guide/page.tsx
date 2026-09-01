@@ -16,7 +16,7 @@ export default function SizeGuidePage() {
       <p className="text-ink-soft text-sm leading-relaxed mb-8">
         All measurements are in inches, taken directly on the body. If you fall between
         two sizes, we recommend sizing up — or booking a{" "}
-        <a href="/consultation" className="text-primary underline underline-offset-2">
+        <a href="/custom-design#book" className="text-primary underline underline-offset-2">
           consultation
         </a>{" "}
         for a made-to-measure fit.

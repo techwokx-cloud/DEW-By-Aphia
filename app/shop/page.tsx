@@ -58,6 +58,14 @@ export default function ShopPage() {
       <div className="mb-10">
         <p className="eyebrow text-primary mb-2">Home / Shop</p>
         <h1 className="font-display text-4xl text-ink">Shop</h1>
+        <div className="mt-4 rounded-md border border-primary/20 bg-primary/[0.04] px-4 py-3 max-w-2xl">
+          <p className="text-xs text-ink-soft leading-relaxed">
+            <span className="text-ink font-medium">These are reference designs, not ready-made stock.</span>{" "}
+            Every DEW by Aphia piece is cut and sewn to order — nothing here is pre-sewn or held in
+            inventory. Choose a design you love, then start a custom order specifying it by name and
+            we&rsquo;ll recreate it in your exact size.
+          </p>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-[220px_1fr] gap-12">

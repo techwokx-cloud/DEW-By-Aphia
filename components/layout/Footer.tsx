@@ -9,7 +9,7 @@ const columns = [
     title: "Shop",
     links: [
       { label: "All Products", href: "/shop" },
-      { label: "Collections", href: "/collections" },
+      { label: "LookBook", href: "/lookbook" },
       { label: "Custom Made", href: "/custom-design" },
       { label: "Accessories", href: "/shop?category=accessories" },
       { label: "Gift Cards", href: "/shop/gift-cards" },

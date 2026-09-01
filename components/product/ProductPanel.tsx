@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Heart, ChevronDown, MessageCircle, ShoppingBag, Check } from "lucide-react";
+import { Heart, ChevronDown, MessageCircle, Sparkles } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { MADE_TO_ORDER_NOTE, WHATSAPP_NUMBER } from "@/lib/business-info";
 import { OrderWhatsAppModal } from "./OrderWhatsAppModal";
-import { useCart } from "@/lib/cart-context";
-import { getProductImage } from "@/lib/product-image";
 import { getSalePrice, isOnSale } from "@/lib/pricing";
 
 export function ProductPanel({ product }: { product: Product }) {
@@ -16,8 +13,6 @@ export function ProductPanel({ product }: { product: Product }) {
   const [wishlisted, setWishlisted] = useState(false);
   const [sizeWarning, setSizeWarning] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [justAdded, setJustAdded] = useState(false);
-  const { addItem } = useCart();
 
   const salePrice = getSalePrice(product);
   const onSale = isOnSale(product);
@@ -36,25 +31,20 @@ export function ProductPanel({ product }: { product: Product }) {
     if (requireSize()) setShowOrderModal(true);
   }
 
-  function handleAddToCart() {
-    if (!requireSize() || !size) return;
-    addItem({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      price: effectivePrice,
-      image: getProductImage(product),
-      color: color ?? "",
-      size,
-    });
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 2000);
-  }
+  const customOrderHref = `/custom-design?design=${encodeURIComponent(product.name)}#book`;
 
   return (
     <div>
       <p className="eyebrow text-primary mb-2">{product.fabric}</p>
       <h1 className="font-display text-3xl text-ink mb-3">{product.name}</h1>
+      <div className="rounded-md border border-primary/20 bg-primary/[0.04] px-3 py-2 mb-4 flex items-start gap-2">
+        <Sparkles size={14} className="text-primary shrink-0 mt-0.5" strokeWidth={1.75} />
+        <p className="text-xs text-ink-soft leading-relaxed">
+          This is a reference design, not held in stock — every DEW by Aphia piece is cut and
+          made specifically for you. Starting a custom order recreates <em>this exact design</em>{" "}
+          in your size; tell us in the notes if you&rsquo;d like any changes.
+        </p>
+      </div>
       {onSale ? (
         <div className="mb-4">
           <div className="flex items-center gap-3 flex-wrap">
@@ -64,9 +54,7 @@ export function ProductPanel({ product }: { product: Product }) {
               SAVE {product.salePercent}%
             </span>
           </div>
-          <p className="text-xs text-primary font-medium mt-1.5">
-            Limited-time clearance price — while stock lasts
-          </p>
+          <p className="text-xs text-primary font-medium mt-1.5">Limited-time reference price</p>
         </div>
       ) : (
         <p className="text-xl text-primary font-medium mb-3">${product.price.toLocaleString()}</p>
@@ -125,30 +113,22 @@ export function ProductPanel({ product }: { product: Product }) {
       </div>
 
       <div className="space-y-3 mb-8">
+        <a
+          href={customOrderHref}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-cream py-3.5 text-sm tracking-[0.08em] uppercase hover:bg-primary-deep transition-colors"
+        >
+          <Sparkles size={16} strokeWidth={1.75} />
+          Start Custom Order — This Design
+        </a>
+
         <button
           onClick={handleOrderClick}
-          className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 text-sm tracking-[0.08em] uppercase hover:brightness-95 transition-all"
+          className="w-full flex items-center justify-center gap-2 border border-[#25D366] text-[#1a8347] py-3.5 text-sm tracking-[0.08em] uppercase hover:bg-[#25D366]/5 transition-colors"
         >
           <MessageCircle size={16} strokeWidth={2} />
           Order via WhatsApp
         </button>
         <p className="text-center text-xs text-ink-soft">or message us directly at {WHATSAPP_NUMBER}</p>
-
-        <button
-          onClick={handleAddToCart}
-          className="w-full flex items-center justify-center gap-2 border border-ink/30 text-ink py-3.5 text-sm tracking-[0.08em] uppercase hover:border-ink transition-colors"
-        >
-          {justAdded ? <Check size={16} strokeWidth={2} /> : <ShoppingBag size={16} strokeWidth={1.75} />}
-          {justAdded ? "Added to Cart" : "Add to Cart"}
-        </button>
-        {justAdded && (
-          <p className="text-center text-xs text-ink-soft">
-            <Link href="/cart" className="text-primary underline underline-offset-2">
-              View cart
-            </Link>{" "}
-            to order multiple pieces in one WhatsApp message.
-          </p>
-        )}
 
         <button
           onClick={() => setWishlisted((v) => !v)}

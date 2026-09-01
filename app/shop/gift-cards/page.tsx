@@ -11,7 +11,7 @@ export default function GiftCardsPage() {
       <p className="font-display text-2xl text-ink mb-2">Coming Soon</p>
       <p className="text-ink-soft text-sm leading-relaxed max-w-sm mx-auto">
         DEW gift cards are on the way. In the meantime, a{" "}
-        <a href="/consultation" className="text-primary underline underline-offset-2">
+        <a href="/custom-design#book" className="text-primary underline underline-offset-2">
           consultation
         </a>{" "}
         makes a wonderful gift too — reach out and we&rsquo;ll help you arrange it.

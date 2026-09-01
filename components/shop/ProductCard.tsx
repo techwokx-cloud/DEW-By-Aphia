@@ -65,6 +65,7 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
       <div className="mt-3">
         <p className="text-ink font-medium text-sm">{product.name}</p>
+        <p className="text-[11px] text-ink-soft/80 uppercase tracking-wide mt-0.5">Made to Order</p>
       </div>
     </Link>
   );

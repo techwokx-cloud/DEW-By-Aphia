@@ -13,7 +13,6 @@ const INTEGRATION_CHECKS: { key: string; label: string; hint: string }[] = [
   { key: "igAccessToken", label: "Instagram publishing/DMs", hint: "IG_ACCESS_TOKEN / IG_BUSINESS_ACCOUNT_ID" },
   { key: "whatsappBusinessToken", label: "WhatsApp owner notifications", hint: "WHATSAPP_BUSINESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID, number set in Settings" },
   { key: "resendSmtpPassword", label: "Newsletter sending", hint: "Resend SMTP password in Settings" },
-  { key: "paystackSecretKey", label: "Card checkout", hint: "Paystack secret key in Settings" },
   { key: "json2videoApiKey", label: "Reel video rendering", hint: "json2video API key in Settings" },
   { key: "falApiKey", label: "AI photo generation", hint: "fal.ai API key in Settings — falls back to a plain branded graphic without it" },
   { key: "metaAdsAccessToken", label: "Monthly seed ads", hint: "Meta Ads access token + Ad Account ID in Settings" },

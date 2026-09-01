@@ -85,7 +85,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         {[
           { icon: Gem, label: "Premium Quality", desc: "Finest fabrics, exquisite craftsmanship" },
           { icon: Truck, label: "Worldwide Shipping", desc: "USA, UK, Canada & Australia" },
-          { icon: ShieldCheck, label: "Secure Payments", desc: "Safe & secure checkout" },
+          { icon: ShieldCheck, label: "Secure Deposit", desc: "50% deposit, paid securely to begin" },
           { icon: Ruler, label: "Made to Order", desc: "Custom pieces just for you" },
         ].map((b) => (
           <div key={b.label} className="flex flex-col sm:flex-row items-center sm:items-start gap-3">

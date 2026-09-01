@@ -19,54 +19,54 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    image: "/collections/hero-1.avif",
+    image: "/custom-orders/order-01.webp",
     eyebrow: "Premium African Fashion",
     headline: ["Bold Heritage.", "Timeless Elegance."],
     copy: "Exquisite Ghanaian wax prints & Ankara designs, crafted for the modern woman of class.",
-    ctaLabel: "Shop Collections",
-    ctaHref: "/collections",
+    ctaLabel: "View LookBook",
+    ctaHref: "/lookbook",
     secondaryLabel: "Book a Consultation",
-    secondaryHref: "/consultation",
+    secondaryHref: "/custom-design#book",
   },
   {
-    image: "/collections/executive-1.avif",
+    image: "/custom-orders/order-05.webp",
     eyebrow: "Tailored for the Boardroom",
     headline: ["Power Dressing,", "Reimagined."],
     copy: "Structured silhouettes cut from Ankara — made to command a room without saying a word.",
-    ctaLabel: "Shop Executive Wear",
-    ctaHref: "/collections",
+    ctaLabel: "View LookBook",
+    ctaHref: "/lookbook",
     secondaryLabel: "Book a Consultation",
-    secondaryHref: "/consultation",
+    secondaryHref: "/custom-design#book",
   },
   {
-    image: "/collections/bridal-1.avif",
+    image: "/custom-orders/order-09.webp",
     eyebrow: "Bridal & Occasion",
     headline: ["Your Day,", "Your Heritage."],
     copy: "Bespoke bridal pieces that honor tradition while feeling entirely, unmistakably yours.",
     ctaLabel: "Book a Consultation",
-    ctaHref: "/consultation",
+    ctaHref: "/custom-design#book",
     secondaryLabel: "View Lookbook",
     secondaryHref: "/lookbook",
   },
   {
-    image: "/collections/evening-1.avif",
+    image: "/custom-orders/order-25.webp",
     eyebrow: "After Dark",
     headline: ["Evening,", "Elevated."],
     copy: "Fluid lines and rich wax-print detail, designed for the moments worth dressing up for.",
-    ctaLabel: "Shop Evening Wear",
-    ctaHref: "/collections",
+    ctaLabel: "View LookBook",
+    ctaHref: "/lookbook",
     secondaryLabel: "Book a Consultation",
-    secondaryHref: "/consultation",
+    secondaryHref: "/custom-design#book",
   },
   {
-    image: "/collections/hero-2.avif",
+    image: "/custom-orders/order-13.webp",
     eyebrow: "Made to Order",
     headline: ["Crafted for", "the Modern Woman."],
     copy: "Every piece is cut, fitted, and finished by hand — made to order, made for you.",
     ctaLabel: "Start Your Order",
     ctaHref: "/custom-design",
     secondaryLabel: "Book a Consultation",
-    secondaryHref: "/consultation",
+    secondaryHref: "/custom-design#book",
   },
 ];
 
@@ -184,7 +184,7 @@ function TrustBadges() {
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10 py-4">
         <Image
           src="/brand/top-info-bar.webp"
-          alt="Premium Quality: finest fabrics, exquisite craftsmanship. Custom Made: personalized designs just for you. Worldwide Shipping: we deliver to your doorstep. Secure Payments: safe & secure checkout experience."
+          alt="Premium Quality: finest fabrics, exquisite craftsmanship. Custom Made: personalized designs just for you. Worldwide Shipping: we deliver to your doorstep. Secure Deposit: pay a secure 50% deposit to begin."
           width={1049}
           height={375}
           sizes="(max-width: 1400px) 100vw, 1400px"

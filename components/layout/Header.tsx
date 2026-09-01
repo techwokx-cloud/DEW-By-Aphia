@@ -4,14 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
-import { useCart } from "@/lib/cart-context";
+import { Menu, Search, User, X } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
-  { label: "Collections", href: "/collections" },
-  { label: "Sale", href: "/sale" },
+  { label: "LookBook", href: "/lookbook" },
   { label: "Custom Made", href: "/custom-design" },
   { label: "About Us", href: "/about" },
 ];
@@ -19,7 +17,6 @@ const NAV_LINKS = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { count } = useCart();
 
   return (
     <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur border-b border-line">
@@ -79,16 +76,10 @@ export function Header() {
               <User size={19} strokeWidth={1.5} />
             </Link>
             <Link
-              href="/cart"
-              aria-label="Cart"
-              className="relative p-2 hover:text-primary transition-colors"
+              href="/custom-design"
+              className="hidden sm:inline-flex ml-2 items-center bg-primary text-cream px-5 py-2.5 text-xs tracking-[0.08em] uppercase hover:bg-primary-deep transition-colors"
             >
-              <ShoppingBag size={19} strokeWidth={1.5} />
-              {count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-cream">
-                  {count}
-                </span>
-              )}
+              Start Your Custom Journey
             </Link>
           </div>
         </div>
@@ -116,11 +107,11 @@ export function Header() {
                 </Link>
               ))}
               <Link
-                href="/consultation"
+                href="/custom-design"
                 onClick={() => setOpen(false)}
                 className="mt-4 text-center text-sm tracking-[0.1em] uppercase bg-primary text-cream py-3"
               >
-                Book Consultation
+                Start Your Custom Journey
               </Link>
             </nav>
           </div>
