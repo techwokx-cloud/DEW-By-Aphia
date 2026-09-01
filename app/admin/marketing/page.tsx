@@ -28,9 +28,18 @@ export default function AdminMarketingPage() {
 
   async function generateDraft() {
     setGenerating(true);
-    await fetch("/api/admin/newsletter", { method: "POST" });
-    setGenerating(false);
-    load();
+    try {
+      const res = await fetch("/api/admin/newsletter", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(`Couldn't generate a draft: ${data.error || `HTTP ${res.status}`}`);
+      }
+    } catch (err) {
+      alert(`Couldn't generate a draft: ${err instanceof Error ? err.message : "network error"}`);
+    } finally {
+      setGenerating(false);
+      load();
+    }
   }
 
   async function act(id: string, action: "approve" | "reject") {

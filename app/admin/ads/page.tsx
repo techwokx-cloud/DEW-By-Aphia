@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { Rocket, X, Loader2, DollarSign, Calendar, Target } from "lucide-react";
+import { Rocket, X, Loader2, DollarSign, Calendar, Target, RefreshCw } from "lucide-react";
 import type { SeedAdCampaign } from "@/lib/store/seed-ads";
 
 const STATUS_STYLE: Record<SeedAdCampaign["status"], string> = {
@@ -31,6 +31,7 @@ export default function AdminAdsPage() {
   const [campaigns, setCampaigns] = useState<SeedAdCampaign[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [actingOn, setActingOn] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const load = useCallback(() => {
     fetch("/api/admin/ads")
@@ -44,6 +45,30 @@ export default function AdminAdsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function checkNow() {
+    setChecking(true);
+    try {
+      const res = await fetch("/api/cron/seed-ad");
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Couldn't check for this month's ad: ${data.error || `HTTP ${res.status}`}`);
+      } else if (data.reason === "already_exists_for_month") {
+        alert("This month's seed ad already exists — see below.");
+      } else if (data.reason === "not_configured") {
+        alert("Meta Ads isn't configured yet — add your Ad Account ID and access token in Settings first.");
+      } else if (data.reason === "disabled_in_settings") {
+        alert("Seed ads are currently turned off in Settings.");
+      } else if (data.created === false) {
+        alert(`Nothing happened: ${data.reason ?? "unknown reason"}`);
+      }
+    } catch (err) {
+      alert(`Couldn't check for this month's ad: ${err instanceof Error ? err.message : "network error"}`);
+    } finally {
+      setChecking(false);
+      load();
+    }
+  }
 
   async function act(id: string, action: "launch" | "reject") {
     setActingOn(id);
@@ -67,7 +92,17 @@ export default function AdminAdsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-ink mb-1">Seed Ads</h1>
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <h1 className="font-display text-3xl text-ink">Seed Ads</h1>
+        <button
+          onClick={checkNow}
+          disabled={checking}
+          className="shrink-0 flex items-center gap-2 border border-primary text-primary px-4 py-2 text-xs uppercase tracking-wide hover:bg-primary hover:text-cream transition-colors disabled:opacity-50"
+        >
+          <RefreshCw size={13} className={checking ? "animate-spin" : ""} />
+          {checking ? "Checking…" : "Check now"}
+        </button>
+      </div>
       <p className="text-ink-soft text-sm mb-8">
         A minimum $10 ad runs every month for 10 days — engagement, leads, and reach rotate
         each month to keep momentum going the rest of the month. Every campaign is created

@@ -72,6 +72,20 @@ const SLIDES: Slide[] = [
 
 export function Hero() {
   const [active, setActive] = useState(0);
+  const [customImages, setCustomImages] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    // Admin-selected images override the default ones per slide, by
+    // position — if fewer than SLIDES.length are set, the remaining
+    // slides just keep their default image. Fails silently to defaults
+    // on any error since this is decorative, not critical content.
+    fetch("/api/hero-images")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.images) && d.images.length > 0) setCustomImages(d.images);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -80,7 +94,7 @@ export function Hero() {
     return () => clearInterval(id);
   }, []);
 
-  const slide = SLIDES[active];
+  const slide = { ...SLIDES[active], image: customImages?.[active] || SLIDES[active].image };
 
   return (
     <section className="relative overflow-hidden bg-ink">

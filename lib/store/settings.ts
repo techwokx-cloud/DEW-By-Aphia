@@ -32,10 +32,14 @@ export interface Settings {
   paystackSecretKey: string | null;
   paystackPublicKey: string | null;
 
+  // Homepage
+  heroImages: string[];
+
   // Meta Ads (Marketing API — seed ad campaigns)
   metaAdAccountId: string | null;
   metaAdsAccessToken: string | null;
   seedAdBudgetUsd: number;
+  seedAdsEnabled: boolean;
 
   // Resend (transactional email via SMTP)
   resendSmtpHost: string | null;
@@ -69,6 +73,8 @@ const settings: Settings = {
   metaAdAccountId: null,
   metaAdsAccessToken: null,
   seedAdBudgetUsd: 10,
+  seedAdsEnabled: true,
+  heroImages: [],
   resendSmtpHost: null,
   resendSmtpPort: 587,
   resendSmtpUsername: null,
@@ -173,6 +179,12 @@ export function getMetaAdsAccessToken(): string | null {
 }
 export function getSeedAdBudgetUsd(): number {
   return settings.seedAdBudgetUsd || 10;
+}
+export function isSeedAdsEnabled(): boolean {
+  return settings.seedAdsEnabled;
+}
+export function getHeroImages(): string[] {
+  return settings.heroImages;
 }
 export function getResendSmtpHost(): string | null {
   return settings.resendSmtpHost || process.env.RESEND_SMTP_HOST || "smtp.resend.com";

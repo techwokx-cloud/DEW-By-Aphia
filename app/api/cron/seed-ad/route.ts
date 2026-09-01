@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCampaignForMonth, createSeedAdCampaign, getLastObjective, markObjectiveUsed } from "@/lib/store/seed-ads";
-import { getSeedAdBudgetUsd } from "@/lib/store/settings";
+import { getSeedAdBudgetUsd, isSeedAdsEnabled } from "@/lib/store/settings";
 import { generateAdCreative } from "@/lib/ai/ad-creative-agent";
 import { decideAdStrategy } from "@/lib/ai/ad-strategy-agent";
 import { listLeads } from "@/lib/store/leads";
@@ -23,6 +23,11 @@ import { getPublicSiteUrl } from "@/lib/site-url";
  * a human confirms it every month before it goes live.
  */
 export async function GET() {
+ try {
+  if (!isSeedAdsEnabled()) {
+    return NextResponse.json({ created: false, reason: "disabled_in_settings" });
+  }
+
   const now = new Date();
   const month = now.toISOString().slice(0, 7); // 'YYYY-MM'
   const monthNumber = now.getMonth() + 1;
@@ -111,4 +116,11 @@ export async function GET() {
   }
 
   return NextResponse.json({ created: result.ok, item: campaign, strategy });
+ } catch (err) {
+  console.error("Seed ad generation failed:", err);
+  return NextResponse.json(
+    { error: err instanceof Error ? err.message : "Seed ad generation failed unexpectedly" },
+    { status: 500 }
+  );
+ }
 }

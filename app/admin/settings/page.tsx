@@ -25,9 +25,30 @@ interface SettingsShape {
   resendSmtpPort: number;
   resendSmtpUsername: string | null;
   resendSmtpPassword: FieldState;
+  heroImages: string[];
   metaAdAccountId: string | null;
   metaAdsAccessToken: FieldState;
   seedAdBudgetUsd: number;
+  seedAdsEnabled: boolean;
+}
+
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label className="flex items-center justify-between gap-4 cursor-pointer">
+      <span className="text-xs uppercase tracking-[0.06em] text-ink-soft">{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${checked ? "bg-primary" : "bg-ink/15"}`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`}
+        />
+      </button>
+    </label>
+  );
 }
 
 function SecretField({
@@ -68,12 +89,12 @@ function StatusPill({ state }: { state: FieldState }) {
   return <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-500">Not configured</span>;
 }
 
-function Section({ title, status, children }: { title: string; status: FieldState; children: React.ReactNode }) {
+function Section({ title, status, children }: { title: string; status?: FieldState; children: React.ReactNode }) {
   return (
     <div className="border border-line rounded-[var(--radius)] bg-white p-6">
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display text-lg text-ink">{title}</h2>
-        <StatusPill state={status} />
+        {status !== undefined && <StatusPill state={status} />}
       </div>
       <div className="space-y-4">{children}</div>
     </div>
@@ -117,6 +138,7 @@ export default function AdminSettingsPage() {
   const [paystackStatus, setPaystackStatus] = useState<FieldState>(null);
   const [paystackPublic, setPaystackPublic] = useState("");
 
+  const [heroImages, setHeroImages] = useState<string[]>(["", "", "", "", ""]);
   const [resendHost, setResendHost] = useState("smtp.resend.com");
   const [resendPort, setResendPort] = useState(587);
   const [resendUsername, setResendUsername] = useState("resend");
@@ -127,6 +149,7 @@ export default function AdminSettingsPage() {
   const [metaAdsToken, setMetaAdsToken] = useState("");
   const [metaAdsStatus, setMetaAdsStatus] = useState<FieldState>(null);
   const [seedAdBudget, setSeedAdBudget] = useState(10);
+  const [seedAdsEnabled, setSeedAdsEnabled] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -148,6 +171,7 @@ export default function AdminSettingsPage() {
         setJ2vStatus(s.json2videoApiKey);
         setPaystackStatus(s.paystackSecretKey);
         setPaystackPublic(s.paystackPublicKey ?? "");
+        setHeroImages(Array.from({ length: 5 }, (_, i) => s.heroImages?.[i] ?? ""));
         setResendHost(s.resendSmtpHost || "smtp.resend.com");
         setResendPort(s.resendSmtpPort || 587);
         setResendUsername(s.resendSmtpUsername || "resend");
@@ -155,6 +179,7 @@ export default function AdminSettingsPage() {
         setMetaAdAccountId(s.metaAdAccountId ?? "");
         setMetaAdsStatus(s.metaAdsAccessToken);
         setSeedAdBudget(s.seedAdBudgetUsd || 10);
+        setSeedAdsEnabled(s.seedAdsEnabled ?? true);
         setLoaded(true);
       });
   }, []);
@@ -184,11 +209,13 @@ export default function AdminSettingsPage() {
       whatsappPhoneNumberId: waPhoneId || null,
       falImageModel: falModel,
       paystackPublicKey: paystackPublic || null,
+      heroImages: heroImages.filter((u) => u.trim()),
       resendSmtpHost: resendHost || null,
       resendSmtpPort: resendPort,
       resendSmtpUsername: resendUsername || null,
       metaAdAccountId: metaAdAccountId || null,
       seedAdBudgetUsd: seedAdBudget,
+      seedAdsEnabled,
     };
     // Only send secret fields the admin actually typed something into —
     // an empty password field means "leave whatever's already set alone".
@@ -364,6 +391,29 @@ export default function AdminSettingsPage() {
           </div>
         </Section>
 
+        <Section title="Homepage Hero Images">
+          <p className="text-xs text-ink-soft -mt-1 mb-3">
+            Up to 5 images for the rotating homepage banner, in order. Leave a slot blank to
+            keep that slide&apos;s default image. Paste any public image URL (from Media, or
+            elsewhere).
+          </p>
+          {heroImages.map((url, i) => (
+            <div key={i}>
+              <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Slide {i + 1}</label>
+              <input
+                value={url}
+                onChange={(e) => {
+                  const next = [...heroImages];
+                  next[i] = e.target.value;
+                  setHeroImages(next);
+                }}
+                placeholder="Use default image"
+                className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono"
+              />
+            </div>
+          ))}
+        </Section>
+
         <Section title="Meta Ads (Seed Ad Campaigns)" status={metaAdsStatus}>
           <p className="text-xs text-ink-soft -mt-1 mb-3">
             A minimum $10 ad runs every month for 10 days, rotating between engagement, leads,
@@ -372,6 +422,9 @@ export default function AdminSettingsPage() {
             here needs the <code>ads_management</code> permission, which your organic posting
             token may not have.
           </p>
+          <div className="border border-line rounded-md px-4 py-3">
+            <Toggle checked={seedAdsEnabled} onChange={setSeedAdsEnabled} label="Seed ads enabled" />
+          </div>
           <SecretField label="Marketing API Access Token" value={metaAdsToken} onChange={setMetaAdsToken} hint="Needs ads_management scope — from Meta Business Suite → System Users" status={metaAdsStatus} />
           <div>
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Ad Account ID</label>

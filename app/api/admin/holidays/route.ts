@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUpcomingOccasions, GHANA_OCCASIONS } from "@/lib/ghana-holidays";
+import { getUpcomingOccasions, PROMO_OCCASIONS } from "@/lib/promo-calendar";
 import { getAllProducts } from "@/lib/products-data";
 import { getProductImage } from "@/lib/product-image";
 import { generateOccasionCaption } from "@/lib/ai/content-agent";
@@ -13,26 +13,34 @@ export async function GET() {
 // "Yes" path of the promo prompt: generate occasion-tied content for a
 // featured product and queue it for approval, same as any other draft.
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  const occasionId = body.occasionId as string;
-  const occasion = GHANA_OCCASIONS.find((o) => o.id === occasionId);
-  if (!occasion) return NextResponse.json({ error: "Unknown occasion" }, { status: 404 });
+  try {
+    const body = await request.json().catch(() => ({}));
+    const occasionId = body.occasionId as string;
+    const occasion = PROMO_OCCASIONS.find((o) => o.id === occasionId);
+    if (!occasion) return NextResponse.json({ error: "Unknown occasion" }, { status: 404 });
 
-  const products = getAllProducts().filter((p) => p.featured);
-  const product = products[Math.floor(Math.random() * products.length)] ?? getAllProducts()[0];
+    const products = getAllProducts().filter((p) => p.featured);
+    const product = products[Math.floor(Math.random() * products.length)] ?? getAllProducts()[0];
 
-  const draft = await generateOccasionCaption(product, occasion.name, occasion.note);
-  const post = await addContentPost({
-    productId: product.id,
-    productName: product.name,
-    image: getProductImage(product),
-    imageSource: "product-photo",
-    contentType: "promo",
-    caption: draft.caption,
-    hashtags: draft.hashtags,
-  });
+    const draft = await generateOccasionCaption(product, occasion.name, occasion.note);
+    const post = await addContentPost({
+      productId: product.id,
+      productName: product.name,
+      image: getProductImage(product),
+      imageSource: "product-photo",
+      contentType: "promo",
+      caption: draft.caption,
+      hashtags: draft.hashtags,
+    });
 
-  await notifyOwner(`Promo draft ready for ${occasion.name}: "${product.name}". Approve it in the DEW admin dashboard.`);
+    await notifyOwner(`Promo draft ready for ${occasion.name}: "${product.name}". Approve it in the DEW admin dashboard.`);
 
-  return NextResponse.json({ item: post, source: draft.source }, { status: 201 });
+    return NextResponse.json({ item: post, source: draft.source }, { status: 201 });
+  } catch (err) {
+    console.error("Promo draft generation failed:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Promo draft generation failed unexpectedly" },
+      { status: 500 }
+    );
+  }
 }

@@ -8,12 +8,20 @@ export async function GET() {
 }
 
 export async function POST() {
-  const draft = await generateNewsletterDraft();
-  const saved = await addNewsletterDraft({ subject: draft.subject, body: draft.body });
+  try {
+    const draft = await generateNewsletterDraft();
+    const saved = await addNewsletterDraft({ subject: draft.subject, body: draft.body });
 
-  const notification = await notifyOwner(
-    `New newsletter draft ready for review: "${draft.subject}". Approve it in the DEW admin dashboard.`
-  );
+    const notification = await notifyOwner(
+      `New newsletter draft ready for review: "${draft.subject}". Approve it in the DEW admin dashboard.`
+    );
 
-  return NextResponse.json({ item: saved, source: draft.source, ownerNotified: notification.sent }, { status: 201 });
+    return NextResponse.json({ item: saved, source: draft.source, ownerNotified: notification.sent }, { status: 201 });
+  } catch (err) {
+    console.error("Newsletter draft generation failed:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Draft generation failed unexpectedly" },
+      { status: 500 }
+    );
+  }
 }

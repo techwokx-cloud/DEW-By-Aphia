@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Package, Sparkles, MessageCircle, ShoppingBag, AlertTriangle, Calendar, Loader2 } from "lucide-react";
-import type { UpcomingOccasion } from "@/lib/ghana-holidays";
+import type { UpcomingOccasion } from "@/lib/promo-calendar";
 
 interface RedactedSettings {
   [key: string]: unknown;
