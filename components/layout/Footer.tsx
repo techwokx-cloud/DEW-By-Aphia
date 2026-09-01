@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { AtSign, MapPin, Mail, Phone, MessageCircle, Clock } from "lucide-react";
-import { FaFacebook, FaThreads, FaTiktok, FaPinterest } from "react-icons/fa6";
+import { MapPin, Mail, Phone, MessageCircle, Clock } from "lucide-react";
+import { FaTiktok, FaPinterest } from "react-icons/fa6";
 import { DewMotifDivider } from "@/components/ui/AnkaraMotif";
 import { WHATSAPP_NUMBER, WHATSAPP_DIGITS, PHONE_NUMBER, EMAIL_ORDERS, ADDRESS, APPOINTMENT_HOURS } from "@/lib/business-info";
 
@@ -38,9 +38,10 @@ const columns = [
 ];
 
 const socials = [
-  { label: "Instagram", href: "https://www.instagram.com/dew_byaphia/", icon: AtSign },
-  { label: "Facebook", href: "https://facebook.com/dewbyaphia", icon: FaFacebook },
-  { label: "Threads", href: "https://www.threads.net/@dew_byaphia", icon: FaThreads },
+  { label: "Instagram", href: "https://www.instagram.com/dew_byaphia/", image: "/brand/instagram-icon.png" },
+  { label: "Facebook", href: "https://facebook.com/dewbyaphia", image: "/brand/facebook-icon.png" },
+  { label: "Threads", href: "https://www.threads.net/@dew_byaphia", image: "/brand/threads-icon.png" },
+  { label: "Website", href: "https://dewbyaphia.online", image: "/brand/web-icon.png" },
   { label: "Pinterest", href: "#", icon: FaPinterest },
   { label: "TikTok", href: "#", icon: FaTiktok },
 ];
@@ -68,16 +69,16 @@ export function Footer() {
             </p>
             <div className="flex gap-3 mt-6">
               {socials.map((s) =>
-                s.label === "Instagram" ? (
+                s.image ? (
                   <a
                     key={s.label}
                     href={s.href}
-                    target="_blank"
-                    rel="noreferrer"
+                    target={s.href.startsWith("http") ? "_blank" : undefined}
+                    rel={s.href.startsWith("http") ? "noreferrer" : undefined}
                     aria-label={s.label}
-                    className="p-1.5 border border-cream/25 rounded-full hover:border-gold transition-colors overflow-hidden"
+                    className="p-1.5 bg-cream rounded-full hover:opacity-80 transition-opacity overflow-hidden"
                   >
-                    <Image src="/brand/instagram-icon.png" alt="" width={18} height={18} className="h-[18px] w-[18px]" />
+                    <Image src={s.image} alt="" width={18} height={18} className="h-[18px] w-[18px] object-contain" />
                   </a>
                 ) : (
                   <a
@@ -88,7 +89,7 @@ export function Footer() {
                     aria-label={s.label}
                     className="p-2 border border-cream/25 rounded-full hover:border-gold hover:text-gold transition-colors"
                   >
-                    <s.icon size={15} strokeWidth={1.5} />
+                    {s.icon && <s.icon size={15} />}
                   </a>
                 )
               )}
