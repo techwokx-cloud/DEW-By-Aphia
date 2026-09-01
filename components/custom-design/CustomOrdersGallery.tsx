@@ -1,12 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
-import { CUSTOM_ORDER_PHOTOS } from "@/lib/custom-orders-data";
+import { CUSTOM_ORDER_PHOTOS as DEFAULT_PHOTOS } from "@/lib/custom-orders-data";
 
 export function CustomOrdersGallery() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  // Starts with the built-in archive so there's no flash of empty state
+  // while the admin-curated list (if any) loads.
+  const [photos, setPhotos] = useState<string[]>(DEFAULT_PHOTOS);
+
+  useEffect(() => {
+    fetch("/api/custom-order-gallery")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.images) && d.images.length > 0) setPhotos(d.images);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 lg:px-10 py-16 lg:py-20">
@@ -20,7 +32,7 @@ export function CustomOrdersGallery() {
       </div>
 
       <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 [column-fill:_balance]">
-        {CUSTOM_ORDER_PHOTOS.map((src, i) => (
+        {photos.map((src, i) => (
           <button
             key={src}
             onClick={() => setActiveIndex(i)}
@@ -42,6 +54,7 @@ export function CustomOrdersGallery() {
 
       {activeIndex !== null && (
         <Lightbox
+          photos={photos}
           index={activeIndex}
           onClose={() => setActiveIndex(null)}
           onNavigate={(i) => setActiveIndex(i)}
@@ -52,15 +65,17 @@ export function CustomOrdersGallery() {
 }
 
 function Lightbox({
+  photos,
   index,
   onClose,
   onNavigate,
 }: {
+  photos: string[];
   index: number;
   onClose: () => void;
   onNavigate: (i: number) => void;
 }) {
-  const total = CUSTOM_ORDER_PHOTOS.length;
+  const total = photos.length;
   return (
     <div className="fixed inset-0 z-[60] bg-ink/95 flex items-center justify-center px-6">
       <button onClick={onClose} aria-label="Close" className="absolute top-5 right-5 text-cream p-2">
@@ -75,7 +90,7 @@ function Lightbox({
       </button>
       <div className="relative w-full max-w-md aspect-[4/5]">
         <Image
-          src={CUSTOM_ORDER_PHOTOS[index]}
+          src={photos[index]}
           alt={`Custom DEW by Aphia order, photo ${index + 1}`}
           fill
           sizes="90vw"

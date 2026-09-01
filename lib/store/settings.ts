@@ -35,6 +35,10 @@ export interface Settings {
   // Homepage
   heroImages: string[];
 
+  // Bespoke order gallery (Custom Made page) — variable-length, admin
+  // manages via Settings, no code changes needed to add/remove photos
+  customOrderGalleryImages: string[];
+
   // Reel motion style
   reelMotionMode: "pan-zoom" | "ai-video";
 
@@ -78,6 +82,7 @@ const settings: Settings = {
   seedAdBudgetUsd: 10,
   seedAdsEnabled: true,
   heroImages: [],
+  customOrderGalleryImages: [],
   reelMotionMode: "pan-zoom",
   resendSmtpHost: null,
   resendSmtpPort: 587,
@@ -189,6 +194,9 @@ export function isSeedAdsEnabled(): boolean {
 }
 export function getHeroImages(): string[] {
   return settings.heroImages;
+}
+export function getCustomOrderGalleryImages(): string[] {
+  return settings.customOrderGalleryImages;
 }
 export function getReelMotionMode(): "pan-zoom" | "ai-video" {
   return settings.reelMotionMode;

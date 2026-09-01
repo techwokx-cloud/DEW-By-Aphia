@@ -26,6 +26,7 @@ interface SettingsShape {
   resendSmtpUsername: string | null;
   resendSmtpPassword: FieldState;
   heroImages: string[];
+  customOrderGalleryImages: string[];
   metaAdAccountId: string | null;
   metaAdsAccessToken: FieldState;
   seedAdBudgetUsd: number;
@@ -52,7 +53,19 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   );
 }
 
-function HeroImageSlot({ index, url, onChange }: { index: number; url: string; onChange: (url: string) => void }) {
+function HeroImageSlot({
+  index,
+  url,
+  onChange,
+  onRemove,
+  label,
+}: {
+  index: number;
+  url: string;
+  onChange: (url: string) => void;
+  onRemove?: () => void;
+  label?: string;
+}) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState<{ id: string; url: string; type: string }[] | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -102,7 +115,7 @@ function HeroImageSlot({ index, url, onChange }: { index: number; url: string; o
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-1.5">Slide {index + 1}</label>
+          <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-1.5">{label ?? `Slide ${index + 1}`}</label>
           <input
             value={url}
             onChange={(e) => onChange(e.target.value)}
@@ -128,14 +141,24 @@ function HeroImageSlot({ index, url, onChange }: { index: number; url: string; o
           <Upload size={12} className={uploading ? "animate-pulse" : ""} /> {uploading ? "Uploading…" : "Upload New"}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-        {url && (
+        {onRemove ? (
           <button
             type="button"
-            onClick={() => onChange("")}
+            onClick={onRemove}
             className="flex items-center gap-1 text-xs text-ink-soft hover:text-red-600 transition-colors ml-auto"
           >
-            <X size={12} /> Clear
+            <X size={12} /> Remove
           </button>
+        ) : (
+          url && (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="flex items-center gap-1 text-xs text-ink-soft hover:text-red-600 transition-colors ml-auto"
+            >
+              <X size={12} /> Clear
+            </button>
+          )
         )}
       </div>
 
@@ -265,6 +288,7 @@ export default function AdminSettingsPage() {
 
 
   const [heroImages, setHeroImages] = useState<string[]>(["", "", "", "", ""]);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [resendHost, setResendHost] = useState("smtp.resend.com");
   const [resendPort, setResendPort] = useState(587);
   const [resendUsername, setResendUsername] = useState("resend");
@@ -297,6 +321,7 @@ export default function AdminSettingsPage() {
         setFalModel(s.falImageModel || "fal-ai/flux/schnell");
         setJ2vStatus(s.json2videoApiKey);
         setHeroImages(Array.from({ length: 5 }, (_, i) => s.heroImages?.[i] ?? ""));
+        setGalleryImages(s.customOrderGalleryImages ?? []);
         setResendHost(s.resendSmtpHost || "smtp.resend.com");
         setResendPort(s.resendSmtpPort || 587);
         setResendUsername(s.resendSmtpUsername || "resend");
@@ -335,6 +360,7 @@ export default function AdminSettingsPage() {
       whatsappPhoneNumberId: waPhoneId || null,
       falImageModel: falModel,
       heroImages: heroImages.filter((u) => u.trim()),
+      customOrderGalleryImages: galleryImages.filter((u) => u.trim()),
       resendSmtpHost: resendHost || null,
       resendSmtpPort: resendPort,
       resendSmtpUsername: resendUsername || null,
@@ -536,6 +562,36 @@ export default function AdminSettingsPage() {
               }}
             />
           ))}
+        </Section>
+
+        <Section title="Bespoke Order Gallery">
+          <p className="text-xs text-ink-soft -mt-1 mb-3">
+            Photos shown in &ldquo;From Our Custom Order Archive&rdquo; on the Custom Made page.
+            Add as many as you like — browse the Media Library, upload new photos, or paste a
+            URL. Leave empty to use the full built-in photo archive; once you add even one photo
+            here, this list replaces it entirely, so add everything you want shown.
+          </p>
+          {galleryImages.map((url, i) => (
+            <HeroImageSlot
+              key={i}
+              index={i}
+              url={url}
+              label={`Photo ${i + 1}`}
+              onChange={(next) => {
+                const copy = [...galleryImages];
+                copy[i] = next;
+                setGalleryImages(copy);
+              }}
+              onRemove={() => setGalleryImages(galleryImages.filter((_, idx) => idx !== i))}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => setGalleryImages([...galleryImages, ""])}
+            className="text-xs text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/5 transition-colors"
+          >
+            + Add Another Photo
+          </button>
         </Section>
 
         <Section title="Meta Ads (Seed Ad Campaigns)" status={metaAdsStatus}>
