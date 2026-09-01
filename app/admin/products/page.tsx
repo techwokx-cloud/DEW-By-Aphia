@@ -36,7 +36,11 @@ export default function AdminProductsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this product? This can't be undone.")) return;
-    await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(`Couldn't delete: ${data.error || `HTTP ${res.status}`}`);
+    }
     load();
   }
 
@@ -176,20 +180,26 @@ function ProductModal({
       sizes,
       colors,
     };
+    let res: Response;
     if (isNew) {
-      await fetch("/api/admin/products", {
+      res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
     } else {
-      await fetch(`/api/admin/products/${product!.id}`, {
+      res = await fetch(`/api/admin/products/${product!.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
     }
     setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(`Couldn't save: ${data.error || `HTTP ${res.status}`}`);
+      return;
+    }
     onSaved();
   }
 

@@ -56,12 +56,12 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="mt-3">
         <p className="text-ink font-medium text-sm">{product.name}</p>
         {onSale ? (
-          <p className="text-base">
+          <p className="text-lg mt-0.5">
             <span className="text-primary font-bold">${salePrice?.toLocaleString()}</span>{" "}
             <span className="text-ink-soft/70 line-through text-sm">${product.price.toLocaleString()}</span>
           </p>
         ) : (
-          <p className="text-ink-soft text-sm">${product.price.toLocaleString()}</p>
+          <p className="text-lg text-primary font-bold mt-0.5">${product.price.toLocaleString()}</p>
         )}
       </div>
     </Link>
