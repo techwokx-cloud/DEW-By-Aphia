@@ -6,6 +6,8 @@ import { pickNextMedia, markUsed } from "@/lib/store/media-library";
 import { generateFalImage, buildPosterPrompt } from "@/lib/fal-client";
 import { generateGraphicCard } from "@/lib/graphic-card";
 import { submitReelRender, type ReelScene } from "@/lib/json2video-client";
+import { generateImageToVideo } from "@/lib/fal-video-client";
+import { getReelMotionMode } from "@/lib/store/settings";
 import { notifyOwner } from "@/lib/whatsapp-owner-notify";
 import { getPublicSiteUrl } from "@/lib/site-url";
 
@@ -53,6 +55,23 @@ export async function POST(request: NextRequest) {
     durationSeconds: i === 0 ? 4.5 : 2.5,
     ...(i === 0 ? { voiceoverLine: script.voiceoverLine } : {}),
   }));
+
+  // Optional AI video generation (real cost, opt-in via Settings) — only
+  // for the opening scene, since it's the longest/most important beat
+  // and generating AI video for all 4 scenes would be slow and expensive.
+  // Falls back to the free Ken Burns pan/zoom on any failure or timeout
+  // rather than blocking reel creation.
+  if (getReelMotionMode() === "ai-video") {
+    const videoResult = await generateImageToVideo(
+      imageUrl,
+      `Subtle cinematic motion, fashion editorial mood, ${product.name}`
+    );
+    if (videoResult.ok && videoResult.videoUrl) {
+      scenes[0].videoUrl = videoResult.videoUrl;
+    } else {
+      console.warn("AI video generation failed, falling back to pan/zoom:", videoResult.error);
+    }
+  }
 
   const render = await submitReelRender(scenes);
 

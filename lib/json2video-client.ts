@@ -14,6 +14,9 @@ const BASE_URL = "https://api.json2video.com/v2";
 
 export interface ReelScene {
   imageUrl: string;
+  /** Optional AI-generated video clip (fal.ai image-to-video) to use
+   * instead of the static image + Ken Burns pan/zoom for this scene. */
+  videoUrl?: string;
   text: string;
   voiceoverLine?: string;
   durationSeconds: number;
@@ -26,6 +29,20 @@ export interface SubmitResult {
   errorDetail?: string;
 }
 
+/** Ken Burns moves to rotate through so scenes don't all move the same
+ * way — JSON2Video's image element supports zoom (-10 to 10) and pan
+ * (direction) natively, no extra API calls or cost, unlike AI video
+ * generation. This alone turns a "static photo with text on top" into an
+ * actually moving shot. */
+const KEN_BURNS_MOVES: { zoom: number; pan: string }[] = [
+  { zoom: 3, pan: "left" },
+  { zoom: -3, pan: "right" },
+  { zoom: 2, pan: "top" },
+  { zoom: -2, pan: "bottom" },
+  { zoom: 4, pan: "top-left" },
+  { zoom: -3, pan: "bottom-right" },
+];
+
 export async function submitReelRender(scenes: ReelScene[]): Promise<SubmitResult> {
   const apiKey = getJson2videoApiKey();
   if (!apiKey) return { started: false, reason: "not_configured" };
@@ -33,30 +50,43 @@ export async function submitReelRender(scenes: ReelScene[]): Promise<SubmitResul
   const movie = {
     resolution: "instagram-story",
     quality: "high",
-    scenes: scenes.map((scene) => ({
-      elements: [
-        { type: "image", src: scene.imageUrl, duration: scene.durationSeconds, resize: "cover" },
-        {
-          type: "text",
-          text: scene.text,
-          duration: scene.durationSeconds,
-          settings: { "font-size": "5vw", color: "#f8f5f0", "text-align": "center" },
-          position: "bottom-center",
-        },
-        // Azure TTS via JSON2Video's managed service — free on all plans,
-        // no separate Azure account needed. See lib/ai/reel-script-agent.ts
-        // for where voiceoverLine is generated (a distinct sentence from
-        // the on-screen `text`, meant to be spoken rather than read).
-        ...(scene.voiceoverLine
-          ? [{
-              type: "voice" as const,
-              text: scene.voiceoverLine,
-              voice: "en-US-EmmaMultilingualNeural",
-              model: "azure" as const,
-            }]
-          : []),
-      ],
-    })),
+    scenes: scenes.map((scene, i) => {
+      const move = KEN_BURNS_MOVES[i % KEN_BURNS_MOVES.length];
+      return {
+        elements: [
+          scene.videoUrl
+            ? { type: "video", src: scene.videoUrl, duration: scene.durationSeconds, resize: "cover", muted: true }
+            : {
+                type: "image",
+                src: scene.imageUrl,
+                duration: scene.durationSeconds,
+                resize: "cover",
+                zoom: move.zoom,
+                pan: move.pan,
+                "pan-distance": 0.15,
+              },
+          {
+            type: "text",
+            text: scene.text,
+            duration: scene.durationSeconds,
+            settings: { "font-size": "5vw", color: "#f8f5f0", "text-align": "center" },
+            position: "bottom-center",
+          },
+          // Azure TTS via JSON2Video's managed service — free on all plans,
+          // no separate Azure account needed. See lib/ai/reel-script-agent.ts
+          // for where voiceoverLine is generated (a distinct sentence from
+          // the on-screen `text`, meant to be spoken rather than read).
+          ...(scene.voiceoverLine
+            ? [{
+                type: "voice" as const,
+                text: scene.voiceoverLine,
+                voice: "en-US-EmmaMultilingualNeural",
+                model: "azure" as const,
+              }]
+            : []),
+        ],
+      };
+    }),
   };
 
   try {

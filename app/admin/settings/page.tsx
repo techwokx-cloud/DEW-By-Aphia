@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Save, Check, Lock, RefreshCw } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Save, Check, Lock, RefreshCw, Upload, Library, X } from "lucide-react";
 
 type FieldState = string | "SET_IN_SETTINGS" | "SET_IN_ENV" | null;
 
@@ -30,6 +30,7 @@ interface SettingsShape {
   metaAdsAccessToken: FieldState;
   seedAdBudgetUsd: number;
   seedAdsEnabled: boolean;
+  reelMotionMode: "pan-zoom" | "ai-video";
 }
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -48,6 +49,134 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
         />
       </button>
     </label>
+  );
+}
+
+function HeroImageSlot({ index, url, onChange }: { index: number; url: string; onChange: (url: string) => void }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [mediaItems, setMediaItems] = useState<{ id: string; url: string; type: string }[] | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function openPicker() {
+    setPickerOpen(true);
+    if (!mediaItems) {
+      fetch("/api/admin/media")
+        .then((r) => r.json())
+        .then((d) => setMediaItems((d.items ?? []).filter((m: { type: string }) => m.type === "image")))
+        .catch(() => setMediaItems([]));
+    }
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/media", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Upload failed: ${data.error || `HTTP ${res.status}`}`);
+        return;
+      }
+      onChange(data.item.url);
+    } catch (err) {
+      alert(`Upload failed: ${err instanceof Error ? err.message : "network error"}`);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="border border-line rounded-md p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-14 w-14 shrink-0 rounded bg-primary/5 border border-line overflow-hidden relative">
+          {url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- admin picker previews arbitrary external URLs; next/image requires allow-listing every remote host
+            <img src={url} alt={`Slide ${index + 1}`} className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full items-center justify-center text-[9px] text-ink-soft text-center px-1">Default</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-1.5">Slide {index + 1}</label>
+          <input
+            value={url}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Use default image"
+            className="w-full border border-line px-3 py-2 text-xs outline-none focus:border-primary font-mono"
+          />
+        </div>
+      </div>
+      <div className="flex gap-2 mt-2.5">
+        <button
+          type="button"
+          onClick={openPicker}
+          className="flex items-center gap-1.5 text-xs text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/5 transition-colors"
+        >
+          <Library size={12} /> Browse Library
+        </button>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-1.5 text-xs text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/5 transition-colors disabled:opacity-50"
+        >
+          <Upload size={12} className={uploading ? "animate-pulse" : ""} /> {uploading ? "Uploading…" : "Upload New"}
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+        {url && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="flex items-center gap-1 text-xs text-ink-soft hover:text-red-600 transition-colors ml-auto"
+          >
+            <X size={12} /> Clear
+          </button>
+        )}
+      </div>
+
+      {pickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-6 py-10" onClick={() => setPickerOpen(false)}>
+          <div
+            className="bg-white rounded-[var(--radius)] p-5 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="font-display text-lg text-ink">Choose an image</p>
+              <button onClick={() => setPickerOpen(false)} aria-label="Close" className="p-1">
+                <X size={18} />
+              </button>
+            </div>
+            {!mediaItems ? (
+              <p className="text-sm text-ink-soft">Loading…</p>
+            ) : mediaItems.length === 0 ? (
+              <p className="text-sm text-ink-soft">No images in the Media Library yet — upload one instead.</p>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {mediaItems.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      onChange(m.url);
+                      setPickerOpen(false);
+                    }}
+                    className="relative aspect-square rounded overflow-hidden border border-line hover:border-primary transition-colors"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- arbitrary media library URLs */}
+                    <img src={m.url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -147,6 +276,7 @@ export default function AdminSettingsPage() {
   const [metaAdsStatus, setMetaAdsStatus] = useState<FieldState>(null);
   const [seedAdBudget, setSeedAdBudget] = useState(10);
   const [seedAdsEnabled, setSeedAdsEnabled] = useState(true);
+  const [reelMotionMode, setReelMotionMode] = useState<"pan-zoom" | "ai-video">("pan-zoom");
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -175,6 +305,7 @@ export default function AdminSettingsPage() {
         setMetaAdsStatus(s.metaAdsAccessToken);
         setSeedAdBudget(s.seedAdBudgetUsd || 10);
         setSeedAdsEnabled(s.seedAdsEnabled ?? true);
+        setReelMotionMode(s.reelMotionMode || "pan-zoom");
         setLoaded(true);
       });
   }, []);
@@ -210,6 +341,7 @@ export default function AdminSettingsPage() {
       metaAdAccountId: metaAdAccountId || null,
       seedAdBudgetUsd: seedAdBudget,
       seedAdsEnabled,
+      reelMotionMode,
     };
     // Only send secret fields the admin actually typed something into —
     // an empty password field means "leave whatever's already set alone".
@@ -344,6 +476,23 @@ export default function AdminSettingsPage() {
 
         <Section title="json2video (Reel rendering)" status={j2vStatus}>
           <SecretField label="API Key" value={j2vKey} onChange={setJ2vKey} hint="json2video.com — free tier available" status={j2vStatus} />
+          <div>
+            <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Opening Scene Motion</label>
+            <select
+              value={reelMotionMode}
+              onChange={(e) => setReelMotionMode(e.target.value as "pan-zoom" | "ai-video")}
+              className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary bg-white"
+            >
+              <option value="pan-zoom">Pan &amp; zoom (Ken Burns) — free, included with json2video</option>
+              <option value="ai-video">AI-generated video (fal.ai) — real cost per reel, ~20s-2min render</option>
+            </select>
+            <p className="text-xs text-ink-soft mt-1.5">
+              Every scene gets a subtle pan/zoom by default — free, no extra API calls. Switching
+              to AI video animates just the opening scene with real generated motion via fal.ai
+              (needs the fal.ai key above) — this costs real money per reel and can take up to 2
+              minutes, falling back to pan/zoom automatically if it fails or times out.
+            </p>
+          </div>
         </Section>
 
         <Section title="Resend (Transactional Email)" status={resendStatus}>
@@ -372,23 +521,20 @@ export default function AdminSettingsPage() {
         <Section title="Homepage Hero Images">
           <p className="text-xs text-ink-soft -mt-1 mb-3">
             Up to 5 images for the rotating homepage banner, in order. Leave a slot blank to
-            keep that slide&apos;s default image. Paste any public image URL (from Media, or
-            elsewhere).
+            keep that slide&apos;s default image. Choose from the Media Library, upload a new
+            photo, or paste any public image URL directly.
           </p>
           {heroImages.map((url, i) => (
-            <div key={i}>
-              <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">Slide {i + 1}</label>
-              <input
-                value={url}
-                onChange={(e) => {
-                  const next = [...heroImages];
-                  next[i] = e.target.value;
-                  setHeroImages(next);
-                }}
-                placeholder="Use default image"
-                className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono"
-              />
-            </div>
+            <HeroImageSlot
+              key={i}
+              index={i}
+              url={url}
+              onChange={(next) => {
+                const copy = [...heroImages];
+                copy[i] = next;
+                setHeroImages(copy);
+              }}
+            />
           ))}
         </Section>
 

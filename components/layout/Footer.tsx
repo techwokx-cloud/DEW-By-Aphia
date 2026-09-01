@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { AtSign, Globe, MapPin, Mail, Phone, Share2, Music2, MessageCircle, Clock } from "lucide-react";
+import { AtSign, MapPin, Mail, Phone, MessageCircle, Clock } from "lucide-react";
+import { FaFacebook, FaThreads, FaTiktok, FaPinterest } from "react-icons/fa6";
 import { DewMotifDivider } from "@/components/ui/AnkaraMotif";
 import { WHATSAPP_NUMBER, WHATSAPP_DIGITS, PHONE_NUMBER, EMAIL_ORDERS, ADDRESS, APPOINTMENT_HOURS } from "@/lib/business-info";
 
@@ -38,9 +39,10 @@ const columns = [
 
 const socials = [
   { label: "Instagram", href: "https://www.instagram.com/dew_byaphia/", icon: AtSign },
-  { label: "Facebook", href: "#", icon: Globe },
-  { label: "Pinterest", href: "#", icon: Share2 },
-  { label: "TikTok", href: "#", icon: Music2 },
+  { label: "Facebook", href: "https://facebook.com/dewbyaphia", icon: FaFacebook },
+  { label: "Threads", href: "https://www.threads.net/@dew_byaphia", icon: FaThreads },
+  { label: "Pinterest", href: "#", icon: FaPinterest },
+  { label: "TikTok", href: "#", icon: FaTiktok },
 ];
 
 export function Footer() {

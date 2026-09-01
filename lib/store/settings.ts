@@ -35,6 +35,9 @@ export interface Settings {
   // Homepage
   heroImages: string[];
 
+  // Reel motion style
+  reelMotionMode: "pan-zoom" | "ai-video";
+
   // Meta Ads (Marketing API — seed ad campaigns)
   metaAdAccountId: string | null;
   metaAdsAccessToken: string | null;
@@ -75,6 +78,7 @@ const settings: Settings = {
   seedAdBudgetUsd: 10,
   seedAdsEnabled: true,
   heroImages: [],
+  reelMotionMode: "pan-zoom",
   resendSmtpHost: null,
   resendSmtpPort: 587,
   resendSmtpUsername: null,
@@ -185,6 +189,9 @@ export function isSeedAdsEnabled(): boolean {
 }
 export function getHeroImages(): string[] {
   return settings.heroImages;
+}
+export function getReelMotionMode(): "pan-zoom" | "ai-video" {
+  return settings.reelMotionMode;
 }
 export function getResendSmtpHost(): string | null {
   return settings.resendSmtpHost || process.env.RESEND_SMTP_HOST || "smtp.resend.com";
