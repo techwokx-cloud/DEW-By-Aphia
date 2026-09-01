@@ -52,17 +52,19 @@ export function ProductCard({ product }: { product: Product }) {
             />
           ))}
         </span>
+        {onSale ? (
+          <span className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-primary text-cream text-sm font-bold px-3 py-1.5 rounded-full shadow-md">
+            ${salePrice?.toLocaleString()}
+            <span className="text-cream/70 line-through text-xs font-normal">${product.price.toLocaleString()}</span>
+          </span>
+        ) : (
+          <span className="absolute bottom-3 right-3 bg-primary text-cream text-sm font-bold px-3 py-1.5 rounded-full shadow-md">
+            ${product.price.toLocaleString()}
+          </span>
+        )}
       </div>
       <div className="mt-3">
         <p className="text-ink font-medium text-sm">{product.name}</p>
-        {onSale ? (
-          <p className="text-lg mt-0.5">
-            <span className="text-primary font-bold">${salePrice?.toLocaleString()}</span>{" "}
-            <span className="text-ink-soft/70 line-through text-sm">${product.price.toLocaleString()}</span>
-          </p>
-        ) : (
-          <p className="text-lg text-primary font-bold mt-0.5">${product.price.toLocaleString()}</p>
-        )}
       </div>
     </Link>
   );
