@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { paystackConfigured, initializeTransaction } from "@/lib/paystack-client";
 import { addOrder } from "@/lib/store/orders";
+import { convertUsdDepositToGhs } from "@/lib/currency";
 import { getPublicSiteUrl } from "@/lib/site-url";
 
 /**
@@ -49,20 +50,29 @@ export async function POST(request: NextRequest) {
     status: "pending",
   });
 
+  // We display and record everything in USD (DEW's international
+  // customers expect USD pricing), but Ghana-registered Paystack accounts
+  // reliably settle in GHS, and USD support needs special account
+  // enablement that isn't guaranteed — so the actual charge converts to
+  // GHS right here, at the last possible moment.
+  const { ghsAmount, rate } = await convertUsdDepositToGhs(depositAmount);
+
   const result = await initializeTransaction({
     email,
     // Mobile money, card, and bank transfer are all shown natively on
     // Paystack's own hosted checkout page — no need to build a separate
     // payment-method picker here.
-    amountMinorUnits: Math.round(depositAmount * 100),
-    currency: "USD",
+    amountMinorUnits: Math.round(ghsAmount * 100),
+    currency: "GHS",
     reference,
     callbackUrl: `${getPublicSiteUrl()}/custom-design/deposit-received?reference=${reference}`,
     metadata: {
       orderId: order.id,
       designName,
-      fullPrice: price,
-      depositAmount,
+      fullPriceUsd: price,
+      depositAmountUsd: depositAmount,
+      depositAmountGhs: ghsAmount,
+      usdToGhsRate: rate,
       customerName: name,
       customerPhone: phone,
     },
@@ -72,5 +82,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error || "Couldn't start payment — please try again." }, { status: 502 });
   }
 
-  return NextResponse.json({ url: result.authorizationUrl });
+  return NextResponse.json({ url: result.authorizationUrl, ghsAmount, rate });
 }

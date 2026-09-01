@@ -100,8 +100,24 @@ function BookingSection() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [ghsPreview, setGhsPreview] = useState<{ ghsAmount: number; rate: number } | null>(null);
   const referenceDesign = searchParams.get("design") ?? "";
   const price = searchParams.get("price") ? Number(searchParams.get("price")) : null;
+  const depositUsd = price ? Math.round(price * 0.5 * 100) / 100 : null;
+
+  // Show the GHS amount the customer will actually be charged before
+  // they submit — the real conversion happens server-side at payment
+  // time, but showing an estimate upfront means nothing is a surprise
+  // once they reach Paystack's page.
+  useEffect(() => {
+    if (!depositUsd) return;
+    fetch(`/api/currency/preview?usd=${depositUsd}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ghsAmount) setGhsPreview({ ghsAmount: d.ghsAmount, rate: d.rate });
+      })
+      .catch(() => {});
+  }, [depositUsd]);
 
   // Next.js's native #hash scroll can fire before this client component
   // (inside a Suspense boundary) has actually mounted, so navigating here
@@ -195,6 +211,12 @@ function BookingSection() {
                     exact design recreated in your size, say so below; we&rsquo;ll confirm every
                     detail with you before we start.
                   </p>
+                  {depositUsd && (
+                    <p className="text-xs text-ink font-medium mt-2 pt-2 border-t border-gold/30">
+                      50% deposit due now: ${depositUsd.toLocaleString()}
+                      {ghsPreview && <span className="text-ink-soft font-normal"> (≈ ₵{ghsPreview.ghsAmount.toLocaleString()} GHS, charged via Paystack)</span>}
+                    </p>
+                  )}
                 </div>
               )}
               <Field label="Reference Design (optional)" id="referenceDesign" defaultValue={referenceDesign} />
