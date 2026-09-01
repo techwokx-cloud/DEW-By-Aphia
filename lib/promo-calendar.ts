@@ -1,4 +1,4 @@
-export type Region = "ghana" | "us" | "canada" | "europe" | "global";
+export type Region = "ghana" | "us" | "canada" | "europe" | "global" | "china" | "middle-east" | "mexico";
 
 export interface PromoOccasion {
   id: string;
@@ -31,6 +31,17 @@ function lastWeekdayOfMonth(year: number, month: number, weekday: number): Date 
   const offset = (lastWeekday - weekday + 7) % 7;
   return new Date(year, month - 1, lastDay.getDate() - offset);
 }
+
+/**
+ * The Crimtan "16 biggest online shopping events" list (the canonical
+ * source for "the 16 biggest") has 4 entries that are genuinely
+ * lunar/lunisolar-calendar events — Ramadan, Easter, Diwali, and Chinese
+ * New Year — the same category as the existing Easter exclusion above.
+ * These need real astronomical/ecclesiastical calculation to place
+ * correctly, not a day-of-week rule, so they're intentionally left out
+ * here rather than guessed at. Worth adding properly later via a proper
+ * lunar calendar library/API if these markets matter for the brand.
+ */
 
 export const PROMO_OCCASIONS: PromoOccasion[] = [
   // --- Ghana ---
@@ -66,6 +77,62 @@ export const PROMO_OCCASIONS: PromoOccasion[] = [
       const thanksgiving = nthWeekdayOfMonth(year, 11, 4, 4); // 4th Thursday of November
       return new Date(thanksgiving.getFullYear(), thanksgiving.getMonth(), thanksgiving.getDate() + 1);
     },
+  },
+  {
+    id: "white-friday",
+    name: "White Friday",
+    regions: ["middle-east"],
+    note: "Middle East's Black Friday equivalent (souq.com/Amazon), same date — often runs as a 4-day weekend",
+    compute: (year) => {
+      const thanksgiving = nthWeekdayOfMonth(year, 11, 4, 4);
+      return new Date(thanksgiving.getFullYear(), thanksgiving.getMonth(), thanksgiving.getDate() + 1);
+    },
+  },
+  {
+    id: "singles-day",
+    name: "Singles' Day (11.11)",
+    regions: ["china", "global"],
+    month: 11,
+    day: 11,
+    note: "The single biggest online shopping day in the world by volume (Alibaba/Double 11) — even brands with no China presence see a halo effect",
+  },
+  {
+    id: "el-buen-fin",
+    name: "El Buen Fin",
+    regions: ["mexico"],
+    note: "Mexico's biggest retail weekend — the long weekend before Revolution Day (3rd Monday of November)",
+    compute: (year) => {
+      const revolutionDay = nthWeekdayOfMonth(year, 11, 1, 3); // 3rd Monday of November
+      return new Date(revolutionDay.getFullYear(), revolutionDay.getMonth(), revolutionDay.getDate() - 3); // Friday before
+    },
+  },
+  {
+    id: "green-monday",
+    name: "Green Monday",
+    regions: ["us"],
+    note: "2nd Monday of December — last-chance-for-Christmas-delivery shopping day",
+    compute: (year) => nthWeekdayOfMonth(year, 12, 1, 2),
+  },
+  {
+    id: "blue-monday",
+    name: "Blue Monday",
+    regions: ["europe", "global"],
+    note: "3rd Monday of January — \"most depressing day of the year\", strong retail-therapy shopping spike",
+    compute: (year) => nthWeekdayOfMonth(year, 1, 1, 3),
+  },
+  {
+    id: "mothers-day-us",
+    name: "Mother's Day (US/Canada)",
+    regions: ["us", "canada"],
+    note: "2nd Sunday of May — major gifting occasion",
+    compute: (year) => nthWeekdayOfMonth(year, 5, 0, 2),
+  },
+  {
+    id: "fathers-day-us",
+    name: "Father's Day (US/Canada)",
+    regions: ["us", "canada"],
+    note: "3rd Sunday of June — gifting occasion, smaller than Mother's Day but still significant",
+    compute: (year) => nthWeekdayOfMonth(year, 6, 0, 3),
   },
   {
     id: "cyber-monday",
