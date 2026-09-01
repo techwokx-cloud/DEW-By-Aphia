@@ -61,7 +61,6 @@ export const PROMO_OCCASIONS: PromoOccasion[] = [
   { id: "emancipation-day", name: "Emancipation Day", regions: ["ghana"], month: 8, day: 1, note: "Heritage and freedom, African diaspora" },
   { id: "founders-day", name: "Founder's Day", regions: ["ghana"], month: 8, day: 4, note: "National founders celebration" },
   { id: "nkrumah-day", name: "Kwame Nkrumah Memorial Day", regions: ["ghana"], month: 9, day: 21, note: "National observance" },
-  { id: "halloween", name: "Halloween", regions: ["us", "canada"], month: 10, day: 31, note: "Party/statement wear, bold color and pattern" },
   { id: "farmers-day", name: "Farmers' Day", regions: ["ghana"], month: 12, day: 5, note: "First Friday of December (approx.) — harvest, community" },
   { id: "christmas", name: "Christmas", regions: ["global"], month: 12, day: 25, note: "Festive wear, family gatherings, gifting" },
   { id: "boxing-day", name: "Boxing Day", regions: ["global"], month: 12, day: 26, note: "Post-Christmas shopping mood" },
