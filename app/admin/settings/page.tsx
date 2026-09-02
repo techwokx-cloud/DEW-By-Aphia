@@ -25,6 +25,7 @@ interface SettingsShape {
   resendSmtpPort: number;
   resendSmtpUsername: string | null;
   resendSmtpPassword: FieldState;
+  bufferApiKey: FieldState;
   heroImages: string[];
   customOrderGalleryImages: string[];
   metaAdAccountId: string | null;
@@ -289,6 +290,11 @@ export default function AdminSettingsPage() {
 
   const [heroImages, setHeroImages] = useState<string[]>(["", "", "", "", ""]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [bufferApiKey, setBufferApiKey] = useState("");
+  const [bufferStatus, setBufferStatus] = useState<FieldState>(null);
+  const [bufferTesting, setBufferTesting] = useState(false);
+  const [bufferResult, setBufferResult] = useState<{ error?: string; organizationName?: string; channels?: { id: string; name: string; service: string }[] } | null>(null);
+
   const [resendHost, setResendHost] = useState("smtp.resend.com");
   const [resendPort, setResendPort] = useState(587);
   const [resendUsername, setResendUsername] = useState("resend");
@@ -322,6 +328,7 @@ export default function AdminSettingsPage() {
         setJ2vStatus(s.json2videoApiKey);
         setHeroImages(Array.from({ length: 5 }, (_, i) => s.heroImages?.[i] ?? ""));
         setGalleryImages(s.customOrderGalleryImages ?? []);
+        setBufferStatus(s.bufferApiKey);
         setResendHost(s.resendSmtpHost || "smtp.resend.com");
         setResendPort(s.resendSmtpPort || 587);
         setResendUsername(s.resendSmtpUsername || "resend");
@@ -334,6 +341,20 @@ export default function AdminSettingsPage() {
         setLoaded(true);
       });
   }, []);
+
+  async function testBuffer() {
+    setBufferTesting(true);
+    setBufferResult(null);
+    try {
+      const res = await fetch("/api/admin/buffer-test");
+      const data = await res.json();
+      setBufferResult(res.ok ? data : { error: data.error || `HTTP ${res.status}` });
+    } catch (err) {
+      setBufferResult({ error: err instanceof Error ? err.message : "network error" });
+    } finally {
+      setBufferTesting(false);
+    }
+  }
 
   async function saveFalModel() {
     setSavingFalModel(true);
@@ -378,6 +399,7 @@ export default function AdminSettingsPage() {
     if (falKey) payload.falApiKey = falKey;
     if (j2vKey) payload.json2videoApiKey = j2vKey;
     if (resendPassword) payload.resendSmtpPassword = resendPassword;
+    if (bufferApiKey) payload.bufferApiKey = bufferApiKey;
     if (metaAdsToken) payload.metaAdsAccessToken = metaAdsToken;
 
     const res = await fetch("/api/admin/settings", {
@@ -393,6 +415,7 @@ export default function AdminSettingsPage() {
     setFalStatus(data.item.falApiKey);
     setJ2vStatus(data.item.json2videoApiKey);
     setResendStatus(data.item.resendSmtpPassword);
+    setBufferStatus(data.item.bufferApiKey);
     setMetaAdsStatus(data.item.metaAdsAccessToken);
     setIgToken("");
     setFbToken("");
@@ -401,6 +424,7 @@ export default function AdminSettingsPage() {
     setFalKey("");
     setJ2vKey("");
     setResendPassword("");
+    setBufferApiKey("");
     setMetaAdsToken("");
     setSaving(false);
     setSaved(true);
@@ -542,6 +566,51 @@ export default function AdminSettingsPage() {
             <label className="block text-xs uppercase tracking-[0.06em] text-ink-soft mb-2">SMTP Username</label>
             <input value={resendUsername} onChange={(e) => setResendUsername(e.target.value)} className="w-full border border-line px-4 py-3 text-sm outline-none focus:border-primary font-mono" />
           </div>
+        </Section>
+
+        <Section title="Buffer (Exploratory)" status={bufferStatus}>
+          <p className="text-xs text-ink-soft -mt-1 mb-3">
+            Testing only right now — this key isn&apos;t wired into any real posting yet.
+            Instagram and Threads publishing still runs through the direct integrations above.
+            Get a personal API key from your Buffer account settings (no approval wait for
+            individual use). Save settings below before testing — the test reads the saved key,
+            not what&apos;s currently typed.
+          </p>
+          <SecretField label="API Key" value={bufferApiKey} onChange={setBufferApiKey} hint="Bearer token from your Buffer account" status={bufferStatus} />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={testBuffer}
+              disabled={bufferTesting}
+              className="flex items-center gap-1.5 text-xs text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/5 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={bufferTesting ? "animate-spin" : ""} />
+              {bufferTesting ? "Testing…" : "Test Connection"}
+            </button>
+          </div>
+          {bufferResult && (
+            <div className={`rounded-md border px-4 py-3 text-xs ${bufferResult.error ? "border-red-200 bg-red-50 text-red-700" : "border-line bg-primary/[0.03] text-ink-soft"}`}>
+              {bufferResult.error ? (
+                <p>{bufferResult.error}</p>
+              ) : (
+                <>
+                  <p className="text-ink font-medium mb-1">Connected — {bufferResult.organizationName}</p>
+                  {bufferResult.channels?.length ? (
+                    <ul className="space-y-0.5">
+                      {bufferResult.channels.map((c: { id: string; name: string; service: string }) => (
+                        <li key={c.id}>
+                          {c.name} <span className="text-ink-soft/70">({c.service})</span> —{" "}
+                          <code className="font-mono">{c.id}</code>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No channels found on this organization.</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </Section>
 
         <Section title="Homepage Hero Images">

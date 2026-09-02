@@ -32,6 +32,10 @@ export interface Settings {
   paystackSecretKey: string | null;
   paystackPublicKey: string | null;
 
+  // Buffer (exploratory social publishing test — not yet wired into
+  // real posting; see lib/buffer-client.ts)
+  bufferApiKey: string | null;
+
   // Homepage
   heroImages: string[];
 
@@ -81,6 +85,7 @@ const settings: Settings = {
   metaAdsAccessToken: null,
   seedAdBudgetUsd: 10,
   seedAdsEnabled: true,
+  bufferApiKey: null,
   heroImages: [],
   customOrderGalleryImages: [],
   reelMotionMode: "pan-zoom",
@@ -113,6 +118,7 @@ export function getSettingsRedacted(): Record<string, unknown> {
     "paystackSecretKey",
     "metaAdsAccessToken",
     "resendSmtpPassword",
+    "bufferApiKey",
   ];
   const out: Record<string, unknown> = { ...settings };
   for (const key of secretKeys) {
@@ -133,6 +139,7 @@ function getEnvFallback(key: keyof Settings): string | undefined {
     paystackSecretKey: process.env.PAYSTACK_SECRET_KEY,
     metaAdsAccessToken: process.env.META_ADS_ACCESS_TOKEN,
     resendSmtpPassword: process.env.RESEND_SMTP_PASSWORD,
+    bufferApiKey: process.env.BUFFER_API_KEY,
   };
   return map[key];
 }
@@ -194,6 +201,9 @@ export function isSeedAdsEnabled(): boolean {
 }
 export function getHeroImages(): string[] {
   return settings.heroImages;
+}
+export function getBufferApiKey(): string | null {
+  return settings.bufferApiKey || process.env.BUFFER_API_KEY || null;
 }
 export function getCustomOrderGalleryImages(): string[] {
   return settings.customOrderGalleryImages;
